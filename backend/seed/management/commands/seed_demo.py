@@ -19,12 +19,14 @@ from clinical.services import merge_facts
 from rules.services import evaluate_patient
 
 DATA = Path(__file__).resolve().parents[2] / "data" / "demo.json"
-# username -> (role, patient code or None)
+# username -> (role, patient code or None). Two care teams by naming only: there is no team model,
+# so every nurse and doctor can see every patient.
+#   Team A: doctor1 + nurse1..nurse3      Team B: doctor2 + nurse4..nurse6
 USERS = {
-    "nurse1": ("nurse", None),
-    "doctor1": ("doctor", None),
+    **{f"nurse{i}": ("nurse", None) for i in range(1, 7)},
+    **{f"doctor{i}": ("doctor", None) for i in range(1, 3)},
+    **{f"patient_syn00{i}": ("patient", f"SYN-00{i}") for i in range(1, 4)},
     "admin1": ("admin", None),
-    "patient_syn001": ("patient", "SYN-001"),
 }
 
 
