@@ -8,6 +8,14 @@ from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Load the repo-root .env (never committed) without overriding real environment variables.
+_ENV_FILE = BASE_DIR.parent / ".env"
+if _ENV_FILE.is_file():
+    for _line in _ENV_FILE.read_text(encoding="utf-8").splitlines():
+        _key, _sep, _value = _line.partition("=")
+        if _sep and not _key.lstrip().startswith("#"):
+            os.environ.setdefault(_key.strip(), _value.strip())
+
 
 def env_bool(name: str, default: bool = False) -> bool:
     return os.environ.get(name, str(default)).strip().lower() in {"1", "true", "yes"}
