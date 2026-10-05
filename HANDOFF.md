@@ -1,63 +1,144 @@
 # HANDOFF
 
-## Lead (M0 — contracts frozen)
+Status: **M0, M1, M2 done on `main`** (lead, ai, rules_data, backend). Next: frontend (M3), then qa + devops (M4).
 
-### Models created (all migrated)
+- Endpoint reference: `docs/api.md` (generated). Real request/response examples for every endpoint:
+  `docs/api_examples.md`.
+- Demo data and expected flags: `docs/demo_data.md`. AI pipeline: `docs/architecture.md`.
+- Tests: `cd backend && python -m pytest -q` → 90 passing, offline, no API key.
 
-| App | Model | Notes |
-|---|---|---|
-| accounts | `User` | `AbstractUser` + `role` (nurse/doctor/patient/admin) + nullable `patient` FK. DB check: a patient-role user must have a patient. |
-| clinical | `Patient` | `is_synthetic` defaults to true. |
-| clinical | `Session` | Typo-guard validators (SBP 50–260, DBP 30–160, weight 20–250 kg, UF 0–8000 ml). Index `(patient, session_date)`. DB check `end_time > start_time`. |
-| clinical | `Note` | Immutable: `save()` on an existing row and `delete()` raise `NoteImmutableError`; a DB trigger rejects any `UPDATE` (Postgres + SQLite). |
-| clinical | `SessionFacts` | One row per session; `symptoms`, `access_findings`, `staff_actions` JSON lists. Write only on draft approval. |
-| ai_engine | `ExtractionDraft` | Status pending/approved/rejected/invalid. |
-| rules | `Flag` | Severity info/attention, `evidence` JSON, `rules_version`. |
-| summaries | `Summary` | Audience clinician/patient, status draft/approved/rejected/invalid. |
-| audit | `AuditLog` | Index `(object_type, object_id)`. |
+## Endpoint status (all implemented)
 
-### Endpoint stubs
+| Method | Path | Roles | Notes |
+|---|---|---|---|
+| POST | `/api/v1/auth/token` | anyone | returns `access`, `refresh`, `role`, `patient_id`; `role` is also a JWT claim |
+| POST | `/api/v1/auth/token/refresh` | anyone | |
+| GET | `/api/v1/patients/` | nurse, doctor | paginated; includes `attention_flag_count` |
+| GET | `/api/v1/patients/{id}/` | nurse, doctor, own patient | another patient's id → 404 |
+| GET | `/api/v1/patients/{id}/timeline/` | nurse, doctor | newest first; each row = session + `notes` + `facts` (null until an approval) + `flags` |
+| POST | `/api/v1/patients/{id}/sessions/` | nurse | 201; typo-guard ranges; `end_time > start_time` |
+| GET | `/api/v1/sessions/{id}/` | nurse, doctor | |
+| POST | `/api/v1/sessions/{id}/notes/` | nurse | 201; returns note + `draft_id` + `draft_status`; optional `supersedes` |
+| GET | `/api/v1/notes/{id}/` | nurse, doctor | notes have no update/delete endpoint |
+| GET | `/api/v1/extraction-drafts/?status=` | nurse | `status` optional: pending / approved / rejected / invalid |
+| GET | `/api/v1/extraction-drafts/{id}/` | nurse | includes `note_text_ar` for highlighting |
+| POST | `/api/v1/extraction-drafts/{id}/approve/` | nurse | optional `edited_payload`; only from `pending`; else 409 |
+| POST | `/api/v1/extraction-drafts/{id}/reject/` | nurse | optional `reason`; from `pending` or `invalid` |
+| POST | `/api/v1/extraction-drafts/{id}/retry/` | nurse | 201; returns a **new** draft; not allowed once approved |
+| GET | `/api/v1/patients/{id}/flags/` | nurse, doctor | |
+| POST | `/api/v1/patients/{id}/summaries/` | nurse, doctor | 201; body `audience`, `period_start`, `period_end` |
+| GET | `/api/v1/summaries/{id}/` | nurse, doctor; patient if own + approved + patient audience | otherwise 404 for patients |
+| POST | `/api/v1/summaries/{id}/approve/` | doctor | only from `draft`; else 409 |
+| POST | `/api/v1/summaries/{id}/reject/` | doctor | optional `reason`; only from `draft` |
+| GET | `/api/v1/me/summaries/` | patient | approved patient-audience summaries of own record only |
+| GET | `/api/v1/audit/?object_type=&object_id=` | admin, doctor | newest first |
 
-Every path in `api_contract` is routed in `backend/kulya/urls.py` and appears in OpenAPI (`/api/schema/`,
-Swagger at `/api/docs/`, table in `docs/api.md`). `POST /api/v1/auth/token` and `/auth/token/refresh` work
-(simplejwt). **All other endpoints return 501** in the shared error format until their owner implements them.
+Conventions for the frontend:
 
-To implement one: write the view in your app, then swap the `stub(...)` call in `kulya/urls.py` for your view.
-Keep the path and the serializer names. Serializers already exist in each app's `serializers.py`.
+- Every list is paginated: `{count, next, previous, results}`, 20 per page, `?page=N`.
+- Every error is `{"error": {"code", "message_ar", "message_en", "details"}}`. Show `message_ar`.
+  Codes in use: `validation_error` (field errors in `details`), `invalid_edit`
+  (`details.validation_errors`), `invalid_state` (409), `invalid_supersedes`, `not_authenticated`,
+  `authentication_failed`, `permission_denied`, `not_found`.
+- Wrong role → 403. Not logged in → 401. A record the user may not know about → 404.
+- Decimals (`pre_weight_kg`, `post_weight_kg`) come back as strings, e.g. `"62.9"`.
 
-### Utilities available
+## What each role delivered
 
-- `kulya.common.arabic.normalize_ar(text)` — use for every Arabic comparison.
-- `kulya.common.errors.ApiError(code, message_ar, message_en, status_code, details)` — raise for a
-  contract-shaped error. The DRF exception handler wraps all other errors into the same format.
-- `ai_engine.client.LLMClient` (ABC, `complete_json(prompt_id, system, user, schema) -> dict`),
-  `LLMOutputError`, `MockLLMClient`, `get_llm_client()`.
-- `backend/gen_api_md.py` / `make docs` — regenerate `docs/api.md`.
+### Lead (M0)
 
-### Left for the owning roles (stubs only, by design)
+Scaffold, all models + migrations, `normalize_ar`, shared error format, `LLMClient` interface,
+`CLAUDE.md`, CI workflow, Flutter app shell (still the `flutter create` template).
 
-- backend: role permission classes and `role` JWT claim (B1), all views, audit service, DEMO_MODE guard (B8).
-- ai: `MockLLMClient` only loads `tests/fixtures/llm/{prompt_id}/default.json`; per-input fixtures and
-  `AnthropicLLMClient` are task A4. `get_llm_client()` raises for any provider other than `mock` until then.
-  Add `anthropic` to `requirements.txt` in that task.
-- rules_data: `seed_demo` command (`make seed`), `rules/config.yaml` (add `pyyaml`/`pydantic` then).
-- devops: `docker-compose.yml` (`make demo`), README.
+### AI (M2)
 
-### Deviations from shared_context (with reasons)
+- Schemas `ai_engine/schemas/{extraction_v1,summary_v1}.json`; prompts
+  `ai_engine/prompts/{extraction_v1,summary_clinician_v1,summary_patient_v1}.md`.
+- `ai_engine/validators.py`: `validate_extraction(payload, note_text)`,
+  `validate_summary(payload, allowed_note_ids)` → `(ok, [{code, path, message}])`.
+  Error codes: `schema_invalid`, `evidence_not_found`, `missing_citation`, `unknown_citation`,
+  `forbidden_advice`, plus `llm_output_error` / `llm_error` recorded by the services.
+- `ai_engine/client.py`: `AnthropicLLMClient`, `MockLLMClient`, `get_llm_client()`.
+- `ai_engine/services.request_extraction(note_id)`, `summaries/services.generate_summary(...)`.
+- `eval/golden/golden.json` (20 notes), `eval/run_eval.py`, `eval/report.md`.
 
-1. **Six required vitals are nullable in the DB** (`pre/post_sbp`, `pre/post_dbp`, `pre/post_weight_kg`).
-   `data_model` lists only `min_intra_sbp` and `uf_volume_ml` as nullable, but rule R3 and the SYN-003
-   storyline need incomplete sessions to exist. The entry form may still require them.
-2. **`SessionFacts` is one row per session** (OneToOne) holding three JSON lists; `data_model` did not fix the shape.
-3. **`Summary.created_at` added** (not in `data_model`) for ordering.
-4. **`POST /sessions/{id}/notes/` response** is `NoteCreated` = note fields + `draft_id` + `draft_status`.
-5. **`PatientSerializer.attention_flag_count`** added because the frontend patient list (F2) needs it.
-6. **Auth paths have no trailing slash** (`/auth/token`), exactly as written in `api_contract`; every other path has one.
-7. **Local toolchain**: developed on Python 3.14 without GNU make; CI pins Python 3.12. Tests ran on SQLite
-   locally; the Postgres trigger path runs in CI only (not yet executed anywhere).
-8. **CI workflow has not been run** (no GitHub remote yet, `act` not installed).
+### Rules + data (M1)
 
-### Test status
+- `rules/config.yaml` + `rules/config.py`; `rules/engine.py` (pure R1–R6);
+  `rules/services.evaluate_patient(patient_id)`.
+- `seed/data/demo.json` (built by `seed/data/build_demo_data.py`), `manage.py seed_demo [--approve-facts]`.
+- `docs/demo_data.md`, `docs/clinical_disclaimer.md`.
 
-`backend`: 9 passed (L-T1 … L-T7 plus DB-trigger and error-format checks), ruff + black clean.
-`frontend`: `flutter analyze` clean, default widget test passes (app is still the `flutter create` template).
+### Backend (M1)
+
+- `accounts/permissions.py` (`IsNurse`, `IsDoctor`, `IsClinician`, `IsAdmin`, `IsAuditor`, `IsPatientOwner`).
+- `clinical/services.py`: `create_session`, `create_note`, `approve_draft`, `reject_draft`,
+  `retry_draft`, `merge_facts`. `summaries/services.py`: `request_summary`, `review_summary`.
+- `audit/services.log(actor, action, obj, before, after)`. Actions written: `create_session`,
+  `create_note`, `create_extraction_draft`, `approve_draft`, `edit_and_approve_draft`,
+  `reject_draft`, `retry_extraction`, `create_summary`, `approve_summary`, `reject_summary`.
+- Demo guard in `clinical/apps.py`.
+
+## For the next roles
+
+**Frontend.** Build against `docs/api.md` + `docs/api_examples.md`. Log in as `nurse1` / `doctor1` /
+`patient_syn001` after `seed_demo`. `GET /extraction-drafts/{id}/` gives `note_text_ar` and `payload`;
+highlight every `evidence_span` / `raw_text` / `uncertain.text` in the note (compare after the same
+normalisation as `normalize_ar`, or highlight by substring search on the raw text first). When
+`edited_payload` is not null it is what was approved. The patient closing line
+«ناقش أي سؤال مع فريقك الطبي» is **not** in summary sentences; render it as the fixed footer.
+
+**QA.** Mock fixtures: `tests/conftest.py::mock_llm(prompt_id, response, note_text=...)`. With the
+mock, a note with no fixture gets an all-empty (valid) extraction, and summaries with no fixture are
+built from a deterministic template (`ai_engine.client.offline_summary`). Seed fixture for tests:
+`call_command("seed_demo", "--approve-facts")` with `DEMO_PASSWORD` set.
+
+**DevOps.** Env vars: `DATABASE_URL`, `DJANGO_SECRET_KEY`, `DJANGO_DEBUG`, `DJANGO_ALLOWED_HOSTS`,
+`DEMO_MODE`, `DEMO_PASSWORD`, `LLM_PROVIDER`, `LLM_MODEL`, `ANTHROPIC_API_KEY`, `LLM_EFFORT`,
+`LLM_TIMEOUT_SECONDS`. `LLM_PROVIDER=anthropic` with no key already logs a warning and falls back to
+the mock (test `a_t12c`). The mock reads `backend/tests/fixtures/llm/` at runtime, so the image must
+ship that folder. Add `gunicorn` to `requirements.txt`. `seed_demo` fails fast without `DEMO_PASSWORD`.
+
+## Deviations from shared_context (with reasons)
+
+1. **Six required vitals are nullable** in the DB and the API. Rule R3 and the SYN-003 storyline
+   need incomplete sessions to exist. The entry form may still require them.
+2. **`SessionFacts` is one row per session** with three JSON lists; items carry `note_id` + `evidence_span`.
+3. **Added fields:** `Summary.created_at`; `Patient.attention_flag_count` (list/detail);
+   `draft_id` + `draft_status` on the note-creation response; `note_text_ar` + `session` on drafts;
+   `role` + `patient_id` on the token response.
+4. **Auth paths have no trailing slash**, exactly as written in `api_contract`.
+5. **No `temperature=0`.** Task A4 asks for it, but current Claude models reject sampling parameters
+   with a 400. Nothing relies on determinism; every output goes through the validators.
+   `LLM_EFFORT` (default `low`) is the tuning knob instead. Default model when `LLM_MODEL` is empty:
+   `claude-opus-5-5`.
+6. **Patient closing line is not model output.** A6 says the patient summary "ends with" the line,
+   but every sentence must carry a citation and a closing remark has none. The prompt tells the
+   model the app shows it; the frontend renders it as a fixed footer (task F6 already asks for one).
+7. **`mentioned_values[].note`** in `ai_contracts` is treated as documentation, not a field. Items
+   are `{kind, raw_text}`.
+8. **`uncertain[].text` is also evidence-checked** (the contract calls it a verbatim substring).
+9. **Summaries cite only notes with an approved extraction.** Sessions without one are left out of
+   the model input entirely, since nothing in them could be cited.
+10. **Reject is allowed from `invalid` as well as `pending`** (B4 says pending only; F4 needs
+    reject on invalid drafts). Approve is pending-only.
+11. **Retry creates a new draft** and closes the old one as rejected, so history is kept.
+12. **R2/R5 ignore code `other`**, and raise one flag per code on the latest session in the window.
+13. **Offline summaries are templated, not fixtures.** Summary inputs contain database ids, so
+    hash-keyed fixtures would be brittle; `MockLLMClient` falls back to a deterministic template.
+14. **Extra demo user `admin1`** (role admin) so the audit view and permission matrix can be shown.
+15. **`factory_boy` is installed but unused**; tests use plain pytest fixtures.
+
+## Not verified
+
+- **No real LLM call has been made.** There was no API key in this environment, so
+  `AnthropicLLMClient` is tested only against a fake SDK object, the prompts have never been run
+  against a model, and `eval/report.md` is the mock sanity run (all 1.00 by construction). The
+  quality targets in the AI brief are unmeasured. Run:
+  `cd backend && LLM_PROVIDER=anthropic ANTHROPIC_API_KEY=... python ../eval/run_eval.py --client anthropic`
+- **PostgreSQL is untested.** Everything ran on SQLite locally; the Postgres note-immutability
+  trigger and the CI workflow have not been executed.
+- **Python 3.14 locally** (spec and CI say 3.12). No `make` on this machine, so Makefile targets
+  were run by hand, not through `make`.
+- Time-based flags (late note, pending review) are only recomputed when something happens to the
+  patient; see the `ponytail:` note in `rules/services.py`.
