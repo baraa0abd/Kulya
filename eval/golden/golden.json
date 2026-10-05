@@ -1,0 +1,508 @@
+[
+  {
+    "id": "G01",
+    "tags": [
+      "chills"
+    ],
+    "note": "المريضة حسّت ببرد ورجفة بنص الجلسة وغطيناها.",
+    "expected": {
+      "symptoms": [
+        {
+          "code": "chills",
+          "label_ar": "برد ورجفة",
+          "timing": "intra",
+          "evidence_span": "حسّت ببرد ورجفة بنص الجلسة"
+        }
+      ],
+      "access_findings": [],
+      "staff_actions": [
+        {
+          "description_ar": "تغطية المريضة",
+          "evidence_span": "غطيناها"
+        }
+      ],
+      "mentioned_values": [],
+      "missing_info": [],
+      "uncertain": []
+    }
+  },
+  {
+    "id": "G02",
+    "tags": [
+      "negation"
+    ],
+    "note": "ما عندها رجفة ولا برد اليوم، الجلسة مشت زينة.",
+    "expected": {
+      "symptoms": [],
+      "access_findings": [],
+      "staff_actions": [],
+      "mentioned_values": [],
+      "missing_info": [],
+      "uncertain": []
+    }
+  },
+  {
+    "id": "G03",
+    "tags": [
+      "past_event"
+    ],
+    "note": "البارحة دخت بالبيت بس اليوم زين وما بي شي.",
+    "expected": {
+      "symptoms": [
+        {
+          "code": "dizziness",
+          "label_ar": "دوخة في البيت",
+          "timing": "pre",
+          "evidence_span": "البارحة دخت بالبيت"
+        }
+      ],
+      "access_findings": [],
+      "staff_actions": [],
+      "mentioned_values": [],
+      "missing_info": [],
+      "uncertain": []
+    }
+  },
+  {
+    "id": "G04",
+    "tags": [
+      "arabic_indic_digits"
+    ],
+    "note": "الضغط قبل الجلسة ١٦٠ على ٩٠ والمريض يكول راسه يوجعه.",
+    "expected": {
+      "symptoms": [
+        {
+          "code": "headache",
+          "label_ar": "صداع",
+          "timing": "unknown",
+          "evidence_span": "راسه يوجعه"
+        }
+      ],
+      "access_findings": [],
+      "staff_actions": [],
+      "mentioned_values": [
+        {
+          "kind": "bp",
+          "raw_text": "١٦٠ على ٩٠"
+        }
+      ],
+      "missing_info": [],
+      "uncertain": []
+    }
+  },
+  {
+    "id": "G05",
+    "tags": [
+      "spelling_variant"
+    ],
+    "note": "صار عنده رجفه قويه وبردان هوايه بعد ساعه من بدايه الجلسه.",
+    "expected": {
+      "symptoms": [
+        {
+          "code": "chills",
+          "label_ar": "رجفة وبرد",
+          "timing": "intra",
+          "evidence_span": "رجفه قويه وبردان هوايه"
+        }
+      ],
+      "access_findings": [],
+      "staff_actions": [],
+      "mentioned_values": [],
+      "missing_info": [],
+      "uncertain": []
+    }
+  },
+  {
+    "id": "G06",
+    "tags": [
+      "cramps"
+    ],
+    "note": "شد عضلي برجله اليمنى بآخر الجلسة، سوينا مساج ونزلنا السحب.",
+    "expected": {
+      "symptoms": [
+        {
+          "code": "cramps",
+          "label_ar": "شد عضلي في الرجل اليمنى",
+          "timing": "intra",
+          "evidence_span": "شد عضلي برجله اليمنى بآخر الجلسة"
+        }
+      ],
+      "access_findings": [],
+      "staff_actions": [
+        {
+          "description_ar": "تدليك موضع الشد",
+          "evidence_span": "سوينا مساج"
+        },
+        {
+          "description_ar": "تقليل السحب",
+          "evidence_span": "نزلنا السحب"
+        }
+      ],
+      "mentioned_values": [],
+      "missing_info": [],
+      "uncertain": []
+    }
+  },
+  {
+    "id": "G07",
+    "tags": [
+      "dialect"
+    ],
+    "note": "المريضة لعبت نفسها وزوعت مرتين بنص الجلسة.",
+    "expected": {
+      "symptoms": [
+        {
+          "code": "nausea",
+          "label_ar": "غثيان",
+          "timing": "intra",
+          "evidence_span": "لعبت نفسها"
+        },
+        {
+          "code": "vomiting",
+          "label_ar": "تقيؤ",
+          "timing": "intra",
+          "evidence_span": "زوعت مرتين بنص الجلسة"
+        }
+      ],
+      "access_findings": [],
+      "staff_actions": [],
+      "mentioned_values": [],
+      "missing_info": [],
+      "uncertain": []
+    }
+  },
+  {
+    "id": "G08",
+    "tags": [
+      "access"
+    ],
+    "note": "نزف من مكان الابرة بعد الجلسة وضغطنا عليه.",
+    "expected": {
+      "symptoms": [],
+      "access_findings": [
+        {
+          "code": "bleeding",
+          "label_ar": "نزف من موضع الإبرة",
+          "evidence_span": "نزف من مكان الابرة بعد الجلسة"
+        }
+      ],
+      "staff_actions": [
+        {
+          "description_ar": "الضغط على موضع النزف",
+          "evidence_span": "ضغطنا عليه"
+        }
+      ],
+      "mentioned_values": [],
+      "missing_info": [],
+      "uncertain": []
+    }
+  },
+  {
+    "id": "G09",
+    "tags": [
+      "access"
+    ],
+    "note": "مكان القسطرة أحمر ويوجعها من نلمسه.",
+    "expected": {
+      "symptoms": [],
+      "access_findings": [
+        {
+          "code": "redness",
+          "label_ar": "احمرار موضع القسطرة",
+          "evidence_span": "مكان القسطرة أحمر"
+        },
+        {
+          "code": "pain",
+          "label_ar": "ألم عند اللمس",
+          "evidence_span": "يوجعها من نلمسه"
+        }
+      ],
+      "staff_actions": [],
+      "mentioned_values": [],
+      "missing_info": [],
+      "uncertain": []
+    }
+  },
+  {
+    "id": "G10",
+    "tags": [
+      "negation",
+      "access"
+    ],
+    "note": "الفستولا زينة، ماكو ورم ولا احمرار ولا نزف.",
+    "expected": {
+      "symptoms": [],
+      "access_findings": [],
+      "staff_actions": [],
+      "mentioned_values": [],
+      "missing_info": [],
+      "uncertain": []
+    }
+  },
+  {
+    "id": "G11",
+    "tags": [
+      "chest_pain"
+    ],
+    "note": "اشتكى من وجع بصدره بالساعة الثانية، خبرنا الطبيب ووكفنا الجلسة.",
+    "expected": {
+      "symptoms": [
+        {
+          "code": "chest_pain",
+          "label_ar": "ألم في الصدر",
+          "timing": "intra",
+          "evidence_span": "وجع بصدره بالساعة الثانية"
+        }
+      ],
+      "access_findings": [],
+      "staff_actions": [
+        {
+          "description_ar": "إبلاغ الطبيب",
+          "evidence_span": "خبرنا الطبيب"
+        },
+        {
+          "description_ar": "إيقاف الجلسة",
+          "evidence_span": "وكفنا الجلسة"
+        }
+      ],
+      "mentioned_values": [],
+      "missing_info": [],
+      "uncertain": []
+    }
+  },
+  {
+    "id": "G12",
+    "tags": [
+      "timing_pre"
+    ],
+    "note": "اجه يلهث وعنده ضيق نفس قبل ما نشبكه عالجهاز.",
+    "expected": {
+      "symptoms": [
+        {
+          "code": "shortness_of_breath",
+          "label_ar": "ضيق نفس",
+          "timing": "pre",
+          "evidence_span": "ضيق نفس قبل ما نشبكه عالجهاز"
+        }
+      ],
+      "access_findings": [],
+      "staff_actions": [],
+      "mentioned_values": [],
+      "missing_info": [],
+      "uncertain": []
+    }
+  },
+  {
+    "id": "G13",
+    "tags": [
+      "timing_post"
+    ],
+    "note": "بعد الجلسة تعبانة هواية وما تكدر تمشي وحدها.",
+    "expected": {
+      "symptoms": [
+        {
+          "code": "fatigue",
+          "label_ar": "تعب شديد",
+          "timing": "post",
+          "evidence_span": "تعبانة هواية وما تكدر تمشي وحدها"
+        }
+      ],
+      "access_findings": [],
+      "staff_actions": [],
+      "mentioned_values": [],
+      "missing_info": [],
+      "uncertain": []
+    }
+  },
+  {
+    "id": "G14",
+    "tags": [
+      "itching"
+    ],
+    "note": "عنده حكة قوية بظهره وايديه طول الجلسة.",
+    "expected": {
+      "symptoms": [
+        {
+          "code": "itching",
+          "label_ar": "حكة في الظهر واليدين",
+          "timing": "intra",
+          "evidence_span": "حكة قوية بظهره وايديه طول الجلسة"
+        }
+      ],
+      "access_findings": [],
+      "staff_actions": [],
+      "mentioned_values": [],
+      "missing_info": [],
+      "uncertain": []
+    }
+  },
+  {
+    "id": "G15",
+    "tags": [
+      "fainting"
+    ],
+    "note": "المريض غاب عن الوعي دقيقة بنص الجلسة، نزلنا راسه ورجع صحى.",
+    "expected": {
+      "symptoms": [
+        {
+          "code": "fainting",
+          "label_ar": "فقدان وعي قصير",
+          "timing": "intra",
+          "evidence_span": "غاب عن الوعي دقيقة بنص الجلسة"
+        }
+      ],
+      "access_findings": [],
+      "staff_actions": [
+        {
+          "description_ar": "خفض رأس المريض",
+          "evidence_span": "نزلنا راسه"
+        }
+      ],
+      "mentioned_values": [],
+      "missing_info": [],
+      "uncertain": []
+    }
+  },
+  {
+    "id": "G16",
+    "tags": [
+      "arabic_indic_digits",
+      "numbers_only"
+    ],
+    "note": "وزنها اليوم ٧١٫٥ كيلو والوزن الجاف ٦٩، سحبنا ٢٥٠٠ مل.",
+    "expected": {
+      "symptoms": [],
+      "access_findings": [],
+      "staff_actions": [
+        {
+          "description_ar": "سحب سوائل",
+          "evidence_span": "سحبنا ٢٥٠٠ مل"
+        }
+      ],
+      "mentioned_values": [
+        {
+          "kind": "weight",
+          "raw_text": "٧١٫٥ كيلو"
+        },
+        {
+          "kind": "weight",
+          "raw_text": "٦٩"
+        },
+        {
+          "kind": "other",
+          "raw_text": "٢٥٠٠ مل"
+        }
+      ],
+      "missing_info": [],
+      "uncertain": []
+    }
+  },
+  {
+    "id": "G17",
+    "tags": [
+      "access",
+      "uncertain"
+    ],
+    "note": "الفلتر تخثر بنص الجلسة وبدلناه، والقسطرة بيها خثرة.",
+    "expected": {
+      "symptoms": [],
+      "access_findings": [
+        {
+          "code": "clotting",
+          "label_ar": "خثرة في القسطرة",
+          "evidence_span": "القسطرة بيها خثرة"
+        }
+      ],
+      "staff_actions": [
+        {
+          "description_ar": "تبديل الفلتر",
+          "evidence_span": "بدلناه"
+        }
+      ],
+      "mentioned_values": [],
+      "missing_info": [],
+      "uncertain": [
+        {
+          "text": "الفلتر تخثر بنص الجلسة",
+          "reason_ar": "تخثر في فلتر الجهاز وليس في المدخل الوعائي"
+        }
+      ]
+    }
+  },
+  {
+    "id": "G18",
+    "tags": [
+      "access"
+    ],
+    "note": "الجريان ضعيف من البداية والجهاز يدك انذار، عدلنا الابرة.",
+    "expected": {
+      "symptoms": [],
+      "access_findings": [
+        {
+          "code": "poor_flow",
+          "label_ar": "ضعف الجريان",
+          "evidence_span": "الجريان ضعيف من البداية"
+        }
+      ],
+      "staff_actions": [
+        {
+          "description_ar": "تعديل موضع الإبرة",
+          "evidence_span": "عدلنا الابرة"
+        }
+      ],
+      "mentioned_values": [],
+      "missing_info": [],
+      "uncertain": []
+    }
+  },
+  {
+    "id": "G19",
+    "tags": [
+      "negation",
+      "mixed"
+    ],
+    "note": "ماكو دوخة اليوم بس عدها صداع خفيف بعد الجلسة.",
+    "expected": {
+      "symptoms": [
+        {
+          "code": "headache",
+          "label_ar": "صداع خفيف",
+          "timing": "post",
+          "evidence_span": "صداع خفيف بعد الجلسة"
+        }
+      ],
+      "access_findings": [],
+      "staff_actions": [],
+      "mentioned_values": [],
+      "missing_info": [],
+      "uncertain": []
+    }
+  },
+  {
+    "id": "G20",
+    "tags": [
+      "uncertain",
+      "access"
+    ],
+    "note": "تكول مو مرتاحة وما تعرف شنو بيها، وايدها مال الفستولا منتفخة شوية.",
+    "expected": {
+      "symptoms": [],
+      "access_findings": [
+        {
+          "code": "swelling",
+          "label_ar": "انتفاخ في يد الفستولا",
+          "evidence_span": "ايدها مال الفستولا منتفخة شوية"
+        }
+      ],
+      "staff_actions": [],
+      "mentioned_values": [],
+      "missing_info": [],
+      "uncertain": [
+        {
+          "text": "مو مرتاحة وما تعرف شنو بيها",
+          "reason_ar": "شكوى غير محددة"
+        }
+      ]
+    }
+  }
+]

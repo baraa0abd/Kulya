@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "extraction_v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["symptoms", "access_findings", "staff_actions", "mentioned_values", "missing_info", "uncertain"],
+  "$defs": {
+    "span": {"type": "string", "minLength": 1, "maxLength": 200},
+    "text": {"type": "string", "minLength": 1, "maxLength": 300}
+  },
+  "properties": {
+    "symptoms": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "label_ar", "timing", "evidence_span"],
+        "properties": {
+          "code": {
+            "enum": [
+              "chills", "dizziness", "fainting", "cramps", "nausea", "vomiting", "headache",
+              "chest_pain", "shortness_of_breath", "itching", "fatigue", "other"
+            ]
+          },
+          "label_ar": {"$ref": "#/$defs/text"},
+          "timing": {"enum": ["pre", "intra", "post", "unknown"]},
+          "evidence_span": {"$ref": "#/$defs/span"}
+        }
+      }
+    },
+    "access_findings": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "label_ar", "evidence_span"],
+        "properties": {
+          "code": {"enum": ["bleeding", "swelling", "pain", "poor_flow", "redness", "clotting", "other"]},
+          "label_ar": {"$ref": "#/$defs/text"},
+          "evidence_span": {"$ref": "#/$defs/span"}
+        }
+      }
+    },
+    "staff_actions": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["description_ar", "evidence_span"],
+        "properties": {
+          "description_ar": {"$ref": "#/$defs/text"},
+          "evidence_span": {"$ref": "#/$defs/span"}
+        }
+      }
+    },
+    "mentioned_values": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "raw_text"],
+        "properties": {
+          "kind": {"enum": ["bp", "weight", "other"]},
+          "raw_text": {"$ref": "#/$defs/span"}
+        }
+      }
+    },
+    "missing_info": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["field", "reason_ar"],
+        "properties": {
+          "field": {"type": "string", "minLength": 1, "maxLength": 50},
+          "reason_ar": {"$ref": "#/$defs/text"}
+        }
+      }
+    },
+    "uncertain": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["text", "reason_ar"],
+        "properties": {
+          "text": {"$ref": "#/$defs/span"},
+          "reason_ar": {"$ref": "#/$defs/text"}
+        }
+      }
+    }
+  }
+}

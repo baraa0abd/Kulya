@@ -43,6 +43,8 @@ ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,back
 LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "mock")
 LLM_MODEL = os.environ.get("LLM_MODEL", "")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+LLM_TIMEOUT_SECONDS = float(os.environ.get("LLM_TIMEOUT_SECONDS", "30"))
+LLM_EFFORT = os.environ.get("LLM_EFFORT", "low")  # low | medium | high | xhigh | max
 
 INSTALLED_APPS = [
     "django.contrib.admin",
