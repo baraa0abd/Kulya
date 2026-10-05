@@ -9,3 +9,6 @@ pytest-django>=4.9
 factory_boy>=3.3
 ruff
 black
+anthropic>=0.60
+pydantic>=2
+pyyaml>=6
