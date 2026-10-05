@@ -7,27 +7,27 @@ Errors always use: `{"error": {"code", "message_ar", "message_en", "details"}}`.
 
 | Method | Path | Request body | Response | Notes |
 |---|---|---|---|---|
-| GET | `/api/v1/audit/` | — | `AuditLog[]` | Allowed roles: admin, doctor. Not implemented yet (501). `?object_id=`, `?object_type=` |
-| POST | `/api/v1/auth/token` | `TokenObtainPair` | `TokenObtainPair` | Takes a set of user credentials and returns an access and refresh JSON web token pair to prove the authentication of those credentials. |
+| GET | `/api/v1/audit/` | — | `PaginatedAuditLogList` | Who did what, newest first. Read-only; there is no endpoint that edits the audit log. `?object_id=`, `?object_type=`, `?page=` |
+| POST | `/api/v1/auth/token` | `KulyaTokenObtainPair` | `KulyaTokenObtainPair` | Takes a set of user credentials and returns an access and refresh JSON web token pair to prove the authentication of those credentials. |
 | POST | `/api/v1/auth/token/refresh` | `TokenRefresh` | `TokenRefresh` | Takes a refresh type JSON web token and returns an access type JSON web token if the refresh token is valid. |
-| GET | `/api/v1/extraction-drafts/` | — | `ExtractionDraft[]` | Allowed roles: nurse. Not implemented yet (501). `?status=` |
-| GET | `/api/v1/extraction-drafts/{id}/` | — | `ExtractionDraft` | Allowed roles: nurse. Not implemented yet (501). |
-| POST | `/api/v1/extraction-drafts/{id}/approve/` | `ApproveDraft` | `ExtractionDraft` | Allowed roles: nurse. Not implemented yet (501). |
-| POST | `/api/v1/extraction-drafts/{id}/reject/` | `Reject` | `ExtractionDraft` | Allowed roles: nurse. Not implemented yet (501). |
-| POST | `/api/v1/extraction-drafts/{id}/retry/` | — | `ExtractionDraft` | Allowed roles: nurse. Not implemented yet (501). |
-| GET | `/api/v1/me/summaries/` | — | `Summary[]` | Allowed roles: patient. Not implemented yet (501). |
-| GET | `/api/v1/notes/{id}/` | — | `Note` | Allowed roles: nurse, doctor. Not implemented yet (501). |
-| GET | `/api/v1/patients/` | — | `Patient[]` | Allowed roles: nurse, doctor. Not implemented yet (501). |
-| GET | `/api/v1/patients/{id}/` | — | `Patient` | Allowed roles: nurse, doctor, own patient. Not implemented yet (501). |
-| GET | `/api/v1/patients/{id}/flags/` | — | `Flag[]` | Allowed roles: nurse, doctor. Not implemented yet (501). |
-| POST | `/api/v1/patients/{id}/sessions/` | `Session` | `Session` | Allowed roles: nurse. Not implemented yet (501). |
-| POST | `/api/v1/patients/{id}/summaries/` | `SummaryRequest` | `Summary` | Allowed roles: nurse, doctor. Not implemented yet (501). |
-| GET | `/api/v1/patients/{id}/timeline/` | — | `TimelineSession[]` | Allowed roles: nurse, doctor. Not implemented yet (501). |
-| GET | `/api/v1/sessions/{id}/` | — | `Session` | Allowed roles: nurse, doctor. Not implemented yet (501). |
-| POST | `/api/v1/sessions/{id}/notes/` | `Note` | `NoteCreated` | Allowed roles: nurse. Not implemented yet (501). |
-| GET | `/api/v1/summaries/{id}/` | — | `Summary` | Allowed roles: nurse, doctor; patient only if audience=patient, approved, own record. Not implemented yet (501). |
-| POST | `/api/v1/summaries/{id}/approve/` | — | `Summary` | Allowed roles: doctor. Not implemented yet (501). |
-| POST | `/api/v1/summaries/{id}/reject/` | `Reject` | `Summary` | Allowed roles: doctor. Not implemented yet (501). |
+| GET | `/api/v1/extraction-drafts/` | — | `PaginatedExtractionDraftList` | `?page=`, `?status=` |
+| GET | `/api/v1/extraction-drafts/{id}/` | — | `ExtractionDraft` |  |
+| POST | `/api/v1/extraction-drafts/{id}/approve/` | `ApproveDraft` | `ExtractionDraft` |  |
+| POST | `/api/v1/extraction-drafts/{id}/reject/` | `Reject` | `ExtractionDraft` |  |
+| POST | `/api/v1/extraction-drafts/{id}/retry/` | — | `ExtractionDraft` |  |
+| GET | `/api/v1/me/summaries/` | — | `PaginatedSummaryList` | `?page=` |
+| GET | `/api/v1/notes/{id}/` | — | `Note` |  |
+| GET | `/api/v1/patients/` | — | `PaginatedPatientList` | `?page=` |
+| GET | `/api/v1/patients/{id}/` | — | `Patient` |  |
+| GET | `/api/v1/patients/{id}/flags/` | — | `PaginatedFlagList` | `?page=` |
+| POST | `/api/v1/patients/{id}/sessions/` | `Session` | `Session` |  |
+| POST | `/api/v1/patients/{id}/summaries/` | `SummaryRequest` | `Summary` |  |
+| GET | `/api/v1/patients/{id}/timeline/` | — | `PaginatedTimelineSessionList` | Sessions newest first, each with vitals, notes, approved facts, and its flags. 20 per page. `?page=` |
+| GET | `/api/v1/sessions/{id}/` | — | `Session` |  |
+| POST | `/api/v1/sessions/{id}/notes/` | `Note` | `NoteCreated` |  |
+| GET | `/api/v1/summaries/{id}/` | — | `Summary` |  |
+| POST | `/api/v1/summaries/{id}/approve/` | — | `Summary` |  |
+| POST | `/api/v1/summaries/{id}/reject/` | `Reject` | `Summary` |  |
 
 ## Schemas
 
@@ -79,6 +79,10 @@ Errors always use: `{"error": {"code", "message_ar", "message_en", "details"}}`.
 - `created_at`: string (read-only)
 - `rules_version`: string (read-only)
 
+### KulyaTokenObtainPair
+- `username`: string
+- `password`: string
+
 ### Note
 - `id`: integer (read-only)
 - `session`: integer (read-only)
@@ -96,6 +100,42 @@ Errors always use: `{"error": {"code", "message_ar", "message_en", "details"}}`.
 - `supersedes`: integer
 - `draft_id`: integer (read-only)
 - `draft_status`: string (read-only)
+
+### PaginatedAuditLogList
+- `count`: integer
+- `next`: string
+- `previous`: string
+- `results`: array
+
+### PaginatedExtractionDraftList
+- `count`: integer
+- `next`: string
+- `previous`: string
+- `results`: array
+
+### PaginatedFlagList
+- `count`: integer
+- `next`: string
+- `previous`: string
+- `results`: array
+
+### PaginatedPatientList
+- `count`: integer
+- `next`: string
+- `previous`: string
+- `results`: array
+
+### PaginatedSummaryList
+- `count`: integer
+- `next`: string
+- `previous`: string
+- `results`: array
+
+### PaginatedTimelineSessionList
+- `count`: integer
+- `next`: string
+- `previous`: string
+- `results`: array
 
 ### Patient
 - `id`: integer (read-only)
@@ -183,12 +223,6 @@ Errors always use: `{"error": {"code", "message_ar", "message_en", "details"}}`.
 - `notes`: array (read-only)
 - `facts`: any (read-only)
 - `flags`: array (read-only)
-
-### TokenObtainPair
-- `username`: string
-- `password`: string
-- `access`: string (read-only)
-- `refresh`: string (read-only)
 
 ### TokenRefresh
 - `access`: string (read-only)

@@ -95,9 +95,7 @@ def test_l_t7_schema_lists_every_contract_endpoint(client) -> None:
 
 
 @pytest.mark.django_db
-def test_stub_uses_shared_error_format(client) -> None:
-    assert set(client.get("/api/v1/patients/").json()["error"]) == {"code", "message_ar", "message_en", "details"}
-    user = get_user_model().objects.create_user("nurse_s", password="pw-12345678", role="nurse")
-    token = client.post("/api/v1/auth/token", {"username": user.username, "password": "pw-12345678"}).json()["access"]
-    response = client.get("/api/v1/patients/", HTTP_AUTHORIZATION=f"Bearer {token}")
-    assert response.status_code == 501 and response.json()["error"]["code"] == "not_implemented"
+def test_shared_error_format(client) -> None:
+    response = client.get("/api/v1/patients/")
+    assert response.status_code == 401
+    assert set(response.json()["error"]) == {"code", "message_ar", "message_en", "details"}

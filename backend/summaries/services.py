@@ -4,11 +4,17 @@ import datetime as dt
 import json
 import logging
 
+from django.db import transaction
+from django.utils import timezone
+
+from accounts.models import User
 from ai_engine.client import LLMOutputError, get_llm_client
 from ai_engine.models import ExtractionDraft
 from ai_engine.services import load_prompt
 from ai_engine.validators import load_schema, validate_summary
+from audit import services as audit
 from clinical.models import Note, Patient, Session
+from kulya.common.errors import ApiError
 from rules.models import Flag
 
 from .models import Summary
@@ -115,3 +121,36 @@ def generate_summary(patient_id: int, audience: str, period_start: dt.date, peri
         model_name=model_name,
         prompt_version=prompt_id,
     )
+
+
+SUMMARY_FIELDS = ("status", "sentences", "validation_errors", "approved_by", "approved_at")
+
+
+def request_summary(patient: Patient, user: User, audience: str, period_start: dt.date, period_end: dt.date) -> Summary:
+    """API entry point: generate the draft and record who asked for it."""
+    summary = generate_summary(patient.id, audience, period_start, period_end)
+    audit.log(user, "create_summary", summary, None, audit.snapshot(summary, "audience", *SUMMARY_FIELDS))
+    return summary
+
+
+@transaction.atomic
+def review_summary(summary_id: int, doctor: User, approve: bool, reason: str = "") -> Summary:
+    """Doctor decision. Only a 'draft' can be approved or rejected; approval is what makes a
+    patient-audience summary visible to the patient."""
+    summary = Summary.objects.select_for_update().get(pk=summary_id)
+    if summary.status != Summary.Status.DRAFT:
+        raise ApiError(
+            "invalid_state",
+            "حالة الملخص الحالية لا تسمح بهذا الإجراء.",
+            f"Summary is '{summary.status}'; only a draft can be approved or rejected.",
+            status_code=409,
+            details={"status": summary.status},
+        )
+    before = audit.snapshot(summary, *SUMMARY_FIELDS)
+    summary.status = Summary.Status.APPROVED if approve else Summary.Status.REJECTED
+    if approve:
+        summary.approved_by, summary.approved_at = doctor, timezone.now()
+    summary.save()
+    after = audit.snapshot(summary, *SUMMARY_FIELDS)
+    audit.log(doctor, "approve_summary" if approve else "reject_summary", summary, before, after | {"reason": reason})
+    return summary
