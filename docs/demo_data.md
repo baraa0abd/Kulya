@@ -24,10 +24,16 @@ All share the password from `DEMO_PASSWORD`.
 
 | Username | Role | Sees |
 |---|---|---|
-| `nurse1` | nurse | all three patients; creates sessions and notes; reviews drafts |
-| `doctor1` | doctor | everything clinical; approves summaries; audit log |
-| `admin1` | admin | audit log only |
+| `nurse1` … `nurse6` | nurse | all three patients; create sessions and notes; review drafts |
+| `doctor1`, `doctor2` | doctor | everything clinical; approve summaries; audit log |
 | `patient_syn001` | patient | approved patient summaries for SYN-001 only |
+| `patient_syn002` | patient | approved patient summaries for SYN-002 only |
+| `patient_syn003` | patient | approved patient summaries for SYN-003 only |
+| `admin1` | admin | audit log only |
+
+Two care teams exist by naming only (Team A: `doctor1` + `nurse1`–`nurse3`; Team B: `doctor2` +
+`nurse4`–`nurse6`). There is no team model, so every nurse and doctor sees every patient. Seeded
+sessions and notes are authored by `nurse1`.
 
 ## Schedule
 

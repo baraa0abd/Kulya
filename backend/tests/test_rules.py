@@ -217,10 +217,13 @@ def test_r_t15_seed_counts(seeded) -> None:
 
 
 def test_r_t15b_seed_users(seeded, django_user_model) -> None:
-    roles = dict(django_user_model.objects.values_list("username", "role"))
-    assert roles == {"nurse1": "nurse", "doctor1": "doctor", "admin1": "admin", "patient_syn001": "patient"}
-    patient_user = django_user_model.objects.get(username="patient_syn001")
-    assert patient_user.patient.code == "SYN-001" and patient_user.check_password("demo-pass-12345")
+    users = django_user_model.objects
+    assert sorted(users.filter(role="nurse").values_list("username", flat=True)) == [f"nurse{i}" for i in range(1, 7)]
+    assert sorted(users.filter(role="doctor").values_list("username", flat=True)) == ["doctor1", "doctor2"]
+    assert list(users.filter(role="admin").values_list("username", flat=True)) == ["admin1"]
+    linked = dict(users.filter(role="patient").values_list("username", "patient__code"))
+    assert linked == {"patient_syn001": "SYN-001", "patient_syn002": "SYN-002", "patient_syn003": "SYN-003"}
+    assert all(u.check_password("demo-pass-12345") for u in users.all())
 
 
 def test_r_t15c_seed_needs_password(db, monkeypatch) -> None:
