@@ -1,0 +1,18 @@
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["migrations", ".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.black]
+line-length = 120
+extend-exclude = "migrations"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "kulya.settings"
+python_files = ["test_*.py"]
+
+[tool.ruff.lint.per-file-ignores]
+"kulya/urls.py" = ["E501"]  # endpoint table reads best one route per line
