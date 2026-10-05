@@ -1,6 +1,6 @@
 # HANDOFF
 
-Status: **M0, M1, M2 done on `main`** (lead, ai, rules_data, backend). Next: frontend (M3), then qa + devops (M4).
+Status: **M0, M1, M2 done; M3 (frontend) done as a single-screen dashboard** on `main`. Next: qa + devops (M4).
 
 - Endpoint reference: `docs/api.md` (generated). Real request/response examples for every endpoint:
   `docs/api_examples.md`.
@@ -78,6 +78,46 @@ Scaffold, all models + migrations, `normalize_ar`, shared error format, `LLMClie
   `create_note`, `create_extraction_draft`, `approve_draft`, `edit_and_approve_draft`,
   `reject_draft`, `retry_extraction`, `create_summary`, `approve_summary`, `reject_summary`.
 - Demo guard in `clinical/apps.py`.
+
+### Frontend (M3) — single-screen dashboard
+
+Built at the product owner's request as **one screen per role** instead of separate routed pages:
+
+- **Staff dashboard** (`lib/dashboard.dart`): patient list with attention-flag counts | SBP chart
+  (`fl_chart`, flagged sessions marked) + session cards newest first (vitals, approved facts, rule
+  flags with evidence, original notes) | work panel with tabs: draft review, new session, summaries.
+  Doctors get the summaries tab only; nurses get all three.
+- **Draft review** (`lib/drafts.dart`): original note with every evidence span highlighted, items
+  as chips (tap = focus its evidence, × = remove before approving → sent as `edited_payload`),
+  mentioned-values warning box, approve / reject / retry; invalid drafts show errors and no approve.
+- **Session entry** (`lib/session_form.dart`): Arabic-Indic or Latin digits, inline typo-guard
+  ranges mirrored from the backend, optional note posted right after the session.
+- **Summaries** (`lib/summaries.dart`): request by audience + period, sentences with citation
+  chips that open the source note, doctor approve / reject.
+- **Patient screen**: only approved patient-audience summaries (filtered again client-side), large
+  text, fixed footer line.
+- All strings in `lib/l10n/app_ar.arb` (default) and `app_en.arb`; locale fixed to `ar`, full RTL.
+- Tests: `flutter test` → 10 passing (logic + widget tests covering F-T1, 5, 6, 7, 8, 9, 11, 12).
+
+Run it: `cd frontend/kulya_app && flutter build web`, then start the backend with
+`DJANGO_DEBUG=true`; Django serves the build at `http://localhost:8000/` (same origin as the API,
+so no CORS). In docker, nginx should serve `build/web` and proxy `/api` instead.
+
+Frontend deviations and gaps:
+
+- **No go_router, no Riverpod.** One screen per role chosen by sign-in state needs no router, and a
+  single `ChangeNotifier` (`lib/state.dart`) holds the state. Both packages were left out.
+- **No bundled Arabic font.** Flutter web fetches Noto fonts from Google at runtime, so Arabic
+  glyphs need internet on first load. Bundle Noto Naskh Arabic / Cairo before an offline demo.
+- **Staff cannot list existing summaries**: the API contract has no list endpoint for them, so the
+  panel shows only summaries requested since sign-in. A doctor cannot find a draft a nurse
+  requested earlier. Fixing this needs a contract change (`GET /patients/{id}/summaries/`).
+- **Drafts panel is not filtered by patient** (the draft payload has no patient id); it lists every
+  pending and invalid draft with its session number.
+- Tokens are kept in memory only: reloading the page signs out.
+- Below ~1180 px width the dashboard scrolls sideways rather than reflowing.
+- Not covered by tests: F-T2 (no routes exist), F-T3/F-T4 (chart and flag card), F-T10 (citation
+  sheet). No audit-log screen. No screenshots in `docs/screens/` yet.
 
 ## For the next roles
 

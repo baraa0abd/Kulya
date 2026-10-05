@@ -21,7 +21,9 @@ lint:
 	cd backend && $(PY) -m ruff check . && $(PY) -m black --check .
 	cd $(APP) && flutter analyze
 
+# Builds the web app, then serves API + app together at http://localhost:8000 (needs DJANGO_DEBUG=true).
 run:
+	cd $(APP) && flutter build web
 	cd backend && $(PY) manage.py runserver
 
 docs:
