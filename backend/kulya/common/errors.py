@@ -2,7 +2,6 @@
 
 from typing import Any
 
-from rest_framework import status
 from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework.views import exception_handler as drf_exception_handler
@@ -30,11 +29,6 @@ class ApiError(APIException):
         self.details = details or {}
 
 
-class NotImplementedYet(ApiError):
-    def __init__(self) -> None:
-        super().__init__("not_implemented", MESSAGES_AR[501], "Not implemented yet.", status.HTTP_501_NOT_IMPLEMENTED)
-
-
 def exception_handler(exc: Exception, context: dict) -> Response | None:
     response = drf_exception_handler(exc, context)
     if response is None:
@@ -44,7 +38,10 @@ def exception_handler(exc: Exception, context: dict) -> Response | None:
     else:
         data = response.data
         is_validation = response.status_code == 400 and not (isinstance(data, dict) and set(data) == {"detail"})
-        code = "validation_error" if is_validation else getattr(exc, "default_code", "error")
+        # Django's Http404 / PermissionDenied carry no DRF code; fall back on the status.
+        by_status = {403: "permission_denied", 404: "not_found"}
+        fallback = by_status.get(response.status_code, "error")
+        code = "validation_error" if is_validation else getattr(exc, "default_code", fallback)
         message_en = "Invalid input." if is_validation else str(data.get("detail", "Error"))
         details = data if is_validation else {}
         message_ar = MESSAGES_AR.get(response.status_code, DEFAULT_MESSAGE_AR)
