@@ -24,3 +24,8 @@ class SummaryRequestSerializer(serializers.Serializer):
     audience = serializers.ChoiceField(choices=Summary.Audience.choices)
     period_start = serializers.DateField()
     period_end = serializers.DateField()
+
+    def validate(self, attrs: dict) -> dict:
+        if attrs["period_end"] < attrs["period_start"]:
+            raise serializers.ValidationError({"period_end": "period_end must not be before period_start."})
+        return attrs
