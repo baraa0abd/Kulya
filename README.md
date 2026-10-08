@@ -436,6 +436,7 @@ Stated plainly, because this is health software:
 | [`TEST_REPORT.md`](TEST_REPORT.md) | What was run, the results, and what was not tested |
 | [`TASKS.md`](TASKS.md) | Task list with status, evidence and limitations |
 | [`docs/openapi.yaml`](docs/openapi.yaml) | Full API schema |
+| [`Dialysis-Copilot-3min.pdf`](Dialysis-Copilot-3min.pdf) | The 3-minute pitch deck |
 
 ---
 
