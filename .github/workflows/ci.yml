@@ -11,14 +11,14 @@ jobs:
       postgres:
         image: pgvector/pgvector:pg16
         env:
-          POSTGRES_USER: copilot
+          POSTGRES_USER: kulya
           POSTGRES_PASSWORD: ci-only
-          POSTGRES_DB: copilot
+          POSTGRES_DB: kulya
         ports: ["5432:5432"]
         options: >-
-          --health-cmd "pg_isready -U copilot" --health-interval 5s --health-timeout 5s --health-retries 10
+          --health-cmd "pg_isready -U kulya" --health-interval 5s --health-timeout 5s --health-retries 10
     env:
-      DATABASE_URL: postgres://copilot:ci-only@localhost:5432/copilot
+      DATABASE_URL: postgres://kulya:ci-only@localhost:5432/kulya
       DJANGO_SECRET_KEY: ci-only-key-not-used-anywhere-else-0123456789
       LLM_PROVIDER: mock
       CELERY_TASK_ALWAYS_EAGER: "true"

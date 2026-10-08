@@ -52,7 +52,7 @@ export function Shell({ title, back, children }: { title: string; back?: string;
       <header className="border-b bg-white">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3">
           <Link href="/" className="text-lg font-semibold text-teal-800">
-            <Tx k="Dialysis Copilot" />
+            <Tx k="Kulya" />
           </Link>
           <span className="text-sm text-slate-500"><Tx k="Synthetic demonstration data" /></span>
           <div className="ms-auto flex items-center gap-3 text-sm">

@@ -224,7 +224,7 @@ export class ApiError extends Error {
   }
 }
 
-const KEY = "copilot.session";
+const KEY = "kulya.session";
 type Tokens = { access: string; refresh: string };
 
 // sessionStorage: scoped to this tab and gone when it closes. Never localStorage.

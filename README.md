@@ -1,4 +1,4 @@
-# Dialysis Copilot
+# Kulya
 
 Dialysis session documentation, AI-assisted documentation review, and AI session summaries for
 nurses, doctors, patients and family caregivers.

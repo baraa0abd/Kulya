@@ -12,7 +12,7 @@ from typing import Any
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
-logger = logging.getLogger("copilot.ai")
+logger = logging.getLogger("kulya.ai")
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 _FENCE = re.compile(r"^```(?:json)?\s*(.*?)\s*```$", re.DOTALL)
 

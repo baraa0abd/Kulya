@@ -46,7 +46,7 @@ test("the interface is Arabic and right-to-left by default", async ({ page }) =>
 // The workflow tests below assert on the English source strings.
 test.beforeEach(async ({ page }, testInfo) => {
   if (testInfo.title.includes("Arabic")) return;
-  await page.addInitScript(() => window.localStorage.setItem("copilot.locale", "en"));
+  await page.addInitScript(() => window.localStorage.setItem("kulya.locale", "en"));
 });
 let sessionUrl = "";
 
@@ -127,7 +127,7 @@ test("unauthorized users are denied", async ({ page }) => {
   await page.goto("/doctor/");
   await expect(page).toHaveURL(/\/patient\/$/);
   // And the API refuses regardless of what the browser shows.
-  const tokens = await page.evaluate(() => JSON.parse(window.sessionStorage.getItem("copilot.session") ?? "{}"));
+  const tokens = await page.evaluate(() => JSON.parse(window.sessionStorage.getItem("kulya.session") ?? "{}"));
   const headers = { Authorization: `Bearer ${tokens.access}` };
   expect((await page.request.get("/api/nursing-actions/", { headers })).status()).toBe(403);
   expect((await page.request.get(`/api${sessionUrl.replace("/nurse", "")}`.replace("/sessions/", "/ai/reviews/?session=").replace(/\/$/, ""), { headers })).status()).toBe(403);

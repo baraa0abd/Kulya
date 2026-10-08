@@ -7,4 +7,4 @@ COPY . .
 RUN useradd --create-home appuser && chown -R appuser /app
 USER appuser
 EXPOSE 8000
-CMD ["gunicorn", "copilot.wsgi", "-b", "0.0.0.0:8000"]
+CMD ["gunicorn", "kulya.wsgi", "-b", "0.0.0.0:8000"]

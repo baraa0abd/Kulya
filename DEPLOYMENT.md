@@ -42,8 +42,8 @@ as a build argument).
 - Migrations: `python manage.py migrate` on every release, before the new code serves traffic.
   The first `ai` migration enables the `vector` extension, so the database role needs permission
   to create extensions (or enable `vector` beforehand).
-- Backup: `docker compose exec db pg_dump -U copilot -Fc copilot > backup.dump`
-- Restore: `docker compose exec -T db pg_restore -U copilot -d copilot --clean < backup.dump`
+- Backup: `docker compose exec db pg_dump -U kulya -Fc kulya > backup.dump`
+- Restore: `docker compose exec -T db pg_restore -U kulya -d kulya --clean < backup.dump`
 - These commands are the standard PostgreSQL procedure; a restore was **not** rehearsed here.
 
 ## Operations

@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: Dialysis Copilot API
+  title: Kulya API
   version: 0.1.0
   description: Dialysis documentation review and session summaries. Synthetic data
     only. Not a medical device.

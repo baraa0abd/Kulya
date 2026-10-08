@@ -5,7 +5,7 @@ Statuses: TODO, IN_PROGRESS, BLOCKED, TESTING, DONE. A task is DONE only with ex
 
 | ID | Description | Pri | Depends | Status | Tests executed / evidence | Known limitations |
 |---|---|---|---|---|---|---|
-| T01 | Repository inspection, architecture, contracts, safety boundaries | P0 | — | DONE | `ARCHITECTURE.md`, `SECURITY.md` | Replaced the earlier Kulya (Flutter) app on branch `copilot` |
+| T01 | Repository inspection, architecture, contracts, safety boundaries | P0 | — | DONE | `ARCHITECTURE.md`, `SECURITY.md` | Replaced the earlier Kulya (Flutter) app on branch `kulya` |
 | T02 | Django + PostgreSQL + pgvector + Redis + Celery configuration | P0 | T01 | DONE | compose stack started; migrations apply | Tested on Python 3.14 locally, 3.12 in the image |
 | T03 | Data model: 23 entities, UUID keys, units, immutability, versioning | P0 | T02 | DONE | `test_model_constraints`, migrations check | — |
 | T04 | Authentication, RBAC, object-level authorization, tenant isolation | P0 | T03 | DONE | `test_security.py` (38) | JWT in sessionStorage; no MFA, lockout or password reset |

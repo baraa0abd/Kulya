@@ -26,7 +26,7 @@ from .provider import ProviderError, get_provider
 from .rules import protocol_unavailable_finding, run_checks
 from .validation import validate_review, validate_summary
 
-logger = logging.getLogger("copilot.ai")
+logger = logging.getLogger("kulya.ai")
 REVIEW_PROMPT, SUMMARY_PROMPT = "review_v1", "summary_v1"
 
 

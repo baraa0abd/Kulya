@@ -2,13 +2,13 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "copilot-backend",
+      "name": "kulya-backend",
       "runtimeExecutable": "backend/.venv/Scripts/python.exe",
       "runtimeArgs": ["backend/manage.py", "runserver", "8000", "--noreload"],
       "port": 8000
     },
     {
-      "name": "copilot-frontend",
+      "name": "kulya-frontend",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "frontend", "run", "dev"],
       "port": 3000

@@ -1,4 +1,4 @@
-"""Dialysis Copilot settings. Everything comes from environment variables (see /.env.example)."""
+"""Kulya settings. Everything comes from environment variables (see /.env.example)."""
 
 import json
 import logging
@@ -64,8 +64,8 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = "copilot.urls"
-WSGI_APPLICATION = "copilot.wsgi.application"
+ROOT_URLCONF = "kulya.urls"
+WSGI_APPLICATION = "kulya.wsgi.application"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -100,7 +100,7 @@ def database_from_url(url: str) -> dict:
 # Default matches `docker compose up -d db` (loopback port 5433).
 DATABASES = {
     "default": database_from_url(
-        os.environ.get("DATABASE_URL") or "postgres://copilot:copilot-dev-only@127.0.0.1:5433/copilot"
+        os.environ.get("DATABASE_URL") or "postgres://kulya:kulya-dev-only@127.0.0.1:5433/kulya"
     )
 }
 
@@ -144,7 +144,7 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(hours=int(os.environ.get("REFRESH_TOKEN_HOURS", "12"))),
 }
 SPECTACULAR_SETTINGS = {
-    "TITLE": "Dialysis Copilot API",
+    "TITLE": "Kulya API",
     "DESCRIPTION": "Dialysis documentation review and session summaries. Synthetic data only. Not a medical device.",
     "VERSION": "0.1.0",
     "SERVE_INCLUDE_SCHEMA": False,

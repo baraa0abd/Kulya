@@ -9,11 +9,11 @@ import { useEffect, useSyncExternalStore } from "react";
  * AI drafts, finding descriptions, error messages) is shown as stored and is not translated here.
  */
 export type Locale = "ar" | "en";
-const STORAGE_KEY = "copilot.locale";
+const STORAGE_KEY = "kulya.locale";
 
 const AR: Record<string, string> = {
   // --- shell, auth ---
-  "Dialysis Copilot": "مساعد الغسيل الكلوي",
+  "Kulya": "كُلية",
   "Synthetic demonstration data": "بيانات تجريبية مصطنعة",
   "Sign out": "تسجيل الخروج",
   "Sign in": "تسجيل الدخول",

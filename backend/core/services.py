@@ -12,7 +12,7 @@ from rest_framework.response import Response
 
 from .models import AuditEvent, IdempotencyKey, User
 
-logger = logging.getLogger("copilot")
+logger = logging.getLogger("kulya")
 
 
 def audit(actor: User | None, action: str, obj: models.Model | None = None, patient=None, **metadata) -> AuditEvent:

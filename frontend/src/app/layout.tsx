@@ -11,7 +11,7 @@ const geist = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const arabic = Noto_Sans_Arabic({ variable: "--font-arabic", subsets: ["arabic"] });
 
 export const metadata: Metadata = {
-  title: "مساعد الغسيل الكلوي · Dialysis Copilot",
+  title: "كُلية · Kulya",
   description: "Dialysis documentation review and session summaries. Synthetic demonstration data only.",
 };
 

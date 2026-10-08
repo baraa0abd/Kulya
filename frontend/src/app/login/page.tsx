@@ -19,7 +19,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>
-            <h1 className="text-2xl text-teal-800"><Tx k="Dialysis Copilot" /></h1>
+            <h1 className="text-2xl text-teal-800"><Tx k="Kulya" /></h1>
           </CardTitle>
           <CardDescription>
             <Tx k="Sign in. This demonstration runs on synthetic data only and is not a medical device." />
