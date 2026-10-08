@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-import { api, type Role, type User } from "./api";
+import { api } from "@/lib/api";
+import { type Role, type User } from "@/lib/types";
 
 export const HOME: Record<Role, string> = {
   doctor: "/doctor/",
@@ -31,7 +32,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // The server says who this is; nothing about the role is kept or trusted on the client.
-    const restore = api.hasSession() ? api.get<User>("/auth/me/").catch(() => null) : Promise.resolve(null);
+    const restore = api.hasSession()
+      ? api.get<User>("/auth/me/").catch(() => null)
+      : Promise.resolve(null);
     restore.then((me) => {
       setUser(me);
       setReady(true);

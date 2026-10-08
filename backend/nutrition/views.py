@@ -1,4 +1,4 @@
-"""Nutrition API. RolePolicy decides who may call each endpoint; `patient_or_404` decides which
+"""Nutrition API. RolePolicy decides who may call each endpoint; `patient_for` decides which
 patients they reach (care assignment, own record, or family consent). Out of scope answers 404."""
 
 import base64
@@ -6,7 +6,6 @@ import binascii
 from datetime import date, timedelta
 
 from django.conf import settings
-from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Q
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
@@ -21,8 +20,10 @@ from clinical.models import ConsentScope, Patient
 from core.errors import ApiError
 from core.permissions import ALL_ROLES, CARE_TEAM, DIETITIAN, DOCTOR, FAMILY, NURSE, PATIENT, patients_for
 from core.services import audit, dispatch, idempotent
+from nutrition import catalog
 
 from . import services, tasks, usda
+from .access import HOUSEHOLD, LOG, READ, meals_for, patient_for
 from .models import (
     FoodLabReview,
     MealLog,
@@ -47,25 +48,7 @@ from .serializers import (
     ReportSerializer,
 )
 
-HOUSEHOLD = (PATIENT, FAMILY)
 CLINICIANS = (DOCTOR, DIETITIAN)  # approve plans, review AI drafts, release reports. Nurses cannot.
-READ, LOG = ConsentScope.NUTRITION, ConsentScope.NUTRITION_LOG  # what a family grant must include
-
-
-def patient_or_404(request: Request, patient_id=None, scope: str = READ) -> Patient:
-    """The patient this call is about, or 404. A patient (or a caregiver with one grant) may omit the id."""
-    patients = patients_for(request.user, scope)
-    try:
-        if patient_id:
-            patient = patients.filter(pk=patient_id).first()
-        else:
-            found = list(patients[:2]) if request.user.role in HOUSEHOLD else []
-            patient = found[0] if len(found) == 1 else None
-    except (DjangoValidationError, ValueError):
-        patient = None
-    if patient is None:
-        raise NotFound()
-    return patient
 
 
 def _day(request: Request, name: str) -> date | None:
@@ -90,7 +73,7 @@ class OverviewView(APIView):
     def get(self, request: Request) -> Response:
         user, today = request.user, timezone.localdate()
         if request.query_params.get("patient") or user.role == PATIENT:
-            patient = patient_or_404(request, request.query_params.get("patient"))
+            patient = patient_for(request.user, request.query_params.get("patient"))
             plan = services.active_plan(patient)
             return Response(
                 {
@@ -105,7 +88,7 @@ class OverviewView(APIView):
                 }
             )
         rows = []
-        # ponytail: a few queries per patient; fine for a care team's list, aggregate if lists grow large.
+        # Counters are restricted to each reachable patient.
         for patient in patients_for(user, READ):
             row = {
                 "patient": patient.id,
@@ -135,7 +118,7 @@ class FoodListView(APIView):
         query = request.query_params.get("q", "")[:100]
         if request.query_params.get("source") == "usda" and request.user.role in CLINICIANS:
             return Response(FoodSerializer(usda.search(query), many=True).data)
-        return Response(FoodSerializer(services.search_foods(query), many=True).data)
+        return Response(FoodSerializer(catalog.search_foods(query), many=True).data)
 
 
 class RecipeListView(APIView):
@@ -146,14 +129,6 @@ class RecipeListView(APIView):
         return Response(RecipeSerializer(Recipe.objects.all(), many=True).data)
 
 
-def _meals(request: Request, scope: str = READ):
-    return (
-        MealLog.objects.filter(patient__in=patients_for(request.user, scope), deleted_at__isnull=True)
-        .select_related("estimate", "created_by")
-        .prefetch_related("components__food_item")
-    )
-
-
 class MealListView(APIView):
     """The food diary. Only the patient, or a caregiver the patient allowed to log meals, may write."""
 
@@ -162,16 +137,18 @@ class MealListView(APIView):
 
     @extend_schema(responses=MealSerializer(many=True))
     def get(self, request: Request) -> Response:
-        patient = patient_or_404(request, request.query_params.get("patient"))
+        patient = patient_for(request.user, request.query_params.get("patient"))
         start, end = services.default_period(_day(request, "from"), _day(request, "to"))
-        meals = _meals(request).filter(patient=patient, consumed_at__date__gte=start, consumed_at__date__lte=end)
+        meals = meals_for(request.user).filter(
+            patient=patient, consumed_at__date__gte=start, consumed_at__date__lte=end
+        )
         return Response(MealSerializer(meals[:300], many=True).data)
 
     @extend_schema(request=MealSerializer, responses=MealSerializer)
     def post(self, request: Request) -> Response:
         def handler() -> Response:
             data = dict(_valid(MealSerializer, request))
-            patient = patient_or_404(request, data.pop("patient_id", None), LOG)
+            patient = patient_for(request.user, data.pop("patient_id", None), LOG)
             meal = services.save_meal(patient, request.user, data)
             return Response(MealSerializer(meal).data, status=status.HTTP_201_CREATED)
 
@@ -183,7 +160,7 @@ class MealDetailView(APIView):
     write_roles = HOUSEHOLD
 
     def meal(self, request: Request, pk, scope: str) -> MealLog:
-        meal = _meals(request, scope).filter(pk=pk).first()
+        meal = meals_for(request.user, scope).filter(pk=pk).first()
         if meal is None:
             raise NotFound()
         return meal
@@ -217,7 +194,7 @@ class RecognizeView(APIView):
     @extend_schema(request=RecognizeSerializer, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request) -> Response:
         data = _valid(RecognizeSerializer, request)
-        patient = patient_or_404(request, data.get("patient"), LOG)
+        patient = patient_for(request.user, data.get("patient"), LOG)
         image = None
         if encoded := data.get("image_base64"):
             try:
@@ -248,7 +225,7 @@ class AnalyzeView(APIView):
     @extend_schema(request=PeriodSerializer, responses=FoodLabReviewSerializer)
     def post(self, request: Request) -> Response:
         data = _valid(PeriodSerializer, request)
-        patient = patient_or_404(request, data.get("patient"))
+        patient = patient_for(request.user, data.get("patient"))
         start, end = services.default_period(data.get("date_from"), data.get("date_to"))
         dispatch(tasks.analyze, str(patient.id), start.isoformat(), end.isoformat())
         review = patient.food_lab_reviews.filter(date_from=start, date_to=end).first()
@@ -273,12 +250,12 @@ class SuggestionsView(APIView):
 
     @extend_schema(responses=RecommendationSerializer(many=True))
     def get(self, request: Request) -> Response:
-        patient = patient_or_404(request, request.query_params.get("patient"))
+        patient = patient_for(request.user, request.query_params.get("patient"))
         return Response(RecommendationSerializer(_visible_recommendations(request, patient)[:100], many=True).data)
 
     @extend_schema(request=PeriodSerializer, responses=RecommendationSerializer(many=True))
     def post(self, request: Request) -> Response:
-        patient = patient_or_404(request, _valid(PeriodSerializer, request).get("patient"))
+        patient = patient_for(request.user, _valid(PeriodSerializer, request).get("patient"))
         services.suggest(patient, request.user)
         return Response(RecommendationSerializer(_visible_recommendations(request, patient)[:100], many=True).data)
 
@@ -316,12 +293,12 @@ class PlanView(APIView):
 
     @extend_schema(responses=PlanSerializer(many=True))
     def get(self, request: Request, pk) -> Response:
-        patient = patient_or_404(request, pk)
+        patient = patient_for(request.user, pk)
         return Response(PlanSerializer(patient.nutrition_plans.select_related("approved_by"), many=True).data)
 
     @extend_schema(request=PlanSerializer, responses=PlanSerializer)
     def post(self, request: Request, pk) -> Response:
-        patient = patient_or_404(request, pk)
+        patient = patient_for(request.user, pk)
         plan = services.approve_plan(patient, request.user, dict(_valid(PlanSerializer, request)))
         return Response(PlanSerializer(plan).data, status=status.HTTP_201_CREATED)
 
@@ -333,7 +310,7 @@ class LabTrendsView(APIView):
 
     @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request: Request, pk) -> Response:
-        patient, user = patient_or_404(request, pk), request.user
+        patient, user = patient_for(request.user, pk), request.user
         start, end = services.default_period(_day(request, "from"), _day(request, "to"))
         staff = user.role in CARE_TEAM
         # A caregiver needs the separate "labs" grant; patients and caregivers see released results only.
@@ -357,7 +334,7 @@ class ReportListView(APIView):
 
     @extend_schema(responses=ReportSerializer(many=True))
     def get(self, request: Request, pk) -> Response:
-        patient, user = patient_or_404(request, pk), request.user
+        patient, user = patient_for(request.user, pk), request.user
         reports = patient.nutrition_reports.select_related("reviewed_by", "patient")
         if user.role in CARE_TEAM:
             return Response(ReportSerializer(reports[:50], many=True).data)
@@ -382,7 +359,7 @@ class ReportGenerateView(APIView):
 
     @extend_schema(request=PeriodSerializer, responses=ReportSerializer)
     def post(self, request: Request, pk) -> Response:
-        patient, data = patient_or_404(request, pk), _valid(PeriodSerializer, request)
+        patient, data = patient_for(request.user, pk), _valid(PeriodSerializer, request)
         start, end = services.default_period(data.get("date_from"), data.get("date_to"))
         dispatch(tasks.build_report, str(patient.id), start.isoformat(), end.isoformat())
         report = patient.nutrition_reports.filter(period_start=start, period_end=end).first()
@@ -411,11 +388,11 @@ class ObservationView(APIView):
 
     @extend_schema(responses=ObservationSerializer(many=True))
     def get(self, request: Request, pk) -> Response:
-        observations = NutritionObservation.objects.filter(patient=patient_or_404(request, pk))
+        observations = NutritionObservation.objects.filter(patient=patient_for(request.user, pk))
         return Response(ObservationSerializer(observations.select_related("author")[:100], many=True).data)
 
     @extend_schema(request=ObservationSerializer, responses=ObservationSerializer)
     def post(self, request: Request, pk) -> Response:
-        patient = patient_or_404(request, pk)
+        patient = patient_for(request.user, pk)
         observation = services.observe(patient, request.user, dict(_valid(ObservationSerializer, request)))
         return Response(ObservationSerializer(observation).data, status=status.HTTP_201_CREATED)

@@ -4,25 +4,18 @@ import { Activity, ClipboardList, FileText, MessageSquare, Sparkles } from "luci
 import { useParams } from "next/navigation";
 import { z } from "zod";
 
-import {
-  AiLabel,
-  ErrorNote,
-  Load,
-  Measurements,
-  type NavItem,
-  requiredText,
-  Section,
-  Shell,
-  Status,
-  Timeline,
-  ZForm,
-} from "@/components/app";
+import { AiLabel, ErrorNote, Load, Section, Status } from "@/components/feedback";
+import { ZForm } from "@/components/forms";
+import { type NavItem, Shell } from "@/components/layout/shell";
 import { Button } from "@/components/ui/button";
-import { type AIReview, type AISummary, api, type Feedback, type SessionDetail } from "@/lib/api";
+import { Measurements, Timeline } from "@/features/clinical/components/session-record";
+import { api } from "@/lib/api";
 import { useRole } from "@/lib/auth";
-import { tr, Tx, useLocale } from "@/lib/i18n";
+import { requiredText } from "@/lib/validation";
 import { dateTime, label } from "@/lib/format";
 import { useAction, useGet, useList } from "@/lib/hooks";
+import { tr, Tx, useLocale } from "@/lib/i18n";
+import { type AIReview, type AISummary, type Feedback, type SessionDetail } from "@/lib/types";
 
 const NAV: NavItem[] = [
   { href: "#measurements", label: "Measurement", icon: Activity },
@@ -38,31 +31,65 @@ const feedbackSchema = z.object({
   text: requiredText("Feedback"),
 });
 
-function ReviewCard({ review, onRequest }: { review: AIReview | undefined; onRequest: () => void }) {
+function ReviewCard({
+  review,
+  onRequest,
+}: {
+  review: AIReview | undefined;
+  onRequest: () => void;
+}) {
   const action = useAction();
   const request = (
-    <Button variant="outline" size="sm" disabled={action.pending} onClick={async () => (await action.run(async () => onRequest())) && undefined}>
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={action.pending}
+      onClick={async () => (await action.run(async () => onRequest())) && undefined}
+    >
       <Tx k="Request reanalysis" />
     </Button>
   );
   if (!review) {
     return (
-      <Section id="review" icon={Sparkles} tone="ai" title="AI documentation review" action={request}>
-        <p className="text-sm text-ink-3"><Tx k="No review has been generated for this session yet." /></p>
+      <Section
+        id="review"
+        icon={Sparkles}
+        tone="ai"
+        title="AI documentation review"
+        action={request}
+      >
+        <p className="text-sm text-ink-3">
+          <Tx k="No review has been generated for this session yet." />
+        </p>
       </Section>
     );
   }
   const passages = new Map(review.protocol_passages.map((p) => [p.id, p]));
   return (
-    <Section id="review" icon={Sparkles} tone="ai" title="AI documentation review" description={`${tr("Generated")} ${dateTime(review.created_at)}`} action={request}>
+    <Section
+      id="review"
+      icon={Sparkles}
+      tone="ai"
+      title="AI documentation review"
+      description={`${tr("Generated")} ${dateTime(review.created_at)}`}
+      action={request}
+    >
       <div className="space-y-3 text-sm">
         <div className="flex flex-wrap items-center gap-2">
           <Status value={review.status} />
-          {review.model_name && <span className="text-ink-3">{tr("Model:")} {tr(review.model_name)}</span>}
+          {review.model_name && (
+            <span className="text-ink-3">
+              {tr("Model:")} {tr(review.model_name)}
+            </span>
+          )}
         </div>
         {review.status === "ai_unavailable" && (
-          <p role="alert" className="rounded-md border border-bad/25 bg-bad-soft px-3 py-2 text-bad">
-            {tr("AI analysis is unavailable for this review")} ({review.ai_error.map((e) => label(e.code)).join("، ") || "—"}).
+          <p
+            role="alert"
+            className="rounded-md border border-bad/25 bg-bad-soft px-3 py-2 text-bad"
+          >
+            {tr("AI analysis is unavailable for this review")} (
+            {review.ai_error.map((e) => label(e.code)).join("، ") || "—"}).
             <Tx k="The rule-based findings below are still valid, and you can review the session as usual." />
           </p>
         )}
@@ -72,10 +99,12 @@ function ReviewCard({ review, onRequest }: { review: AIReview | undefined; onReq
             <p>{tr(review.output.summary ?? "")}</p>
             {review.output.documentation_gaps.length > 0 && (
               <div>
-                <h3 className="font-medium"><Tx k="Documentation gaps" /></h3>
+                <h3 className="font-medium">
+                  <Tx k="Documentation gaps" />
+                </h3>
                 <ul className="list-disc space-y-1 ps-5">
-                  {review.output.documentation_gaps.map((gap) => (
-                    <li key={gap.finding_id}>
+                  {review.output.documentation_gaps.map((gap, index) => (
+                    <li key={`${gap.finding_id}:${index}`}>
                       {tr(gap.description ?? "")}
                       {gap.protocol_reference_ids.map((ref) => {
                         const p = passages.get(ref);
@@ -93,7 +122,9 @@ function ReviewCard({ review, onRequest }: { review: AIReview | undefined; onReq
             )}
             {review.output.questions_for_doctor.length > 0 && (
               <div>
-                <h3 className="font-medium"><Tx k="Questions for you" /></h3>
+                <h3 className="font-medium">
+                  <Tx k="Questions for you" />
+                </h3>
                 <ul className="list-disc ps-5">
                   {review.output.questions_for_doctor.map((q) => (
                     <li key={q}>{tr(q ?? "")}</li>
@@ -104,13 +135,17 @@ function ReviewCard({ review, onRequest }: { review: AIReview | undefined; onReq
           </>
         )}
         <div>
-          <h3 className="font-medium">{tr("Rule-based documentation checks")} ({review.rule_findings.length})</h3>
+          <h3 className="font-medium">
+            {tr("Rule-based documentation checks")} ({review.rule_findings.length})
+          </h3>
           {review.rule_findings.length === 0 ? (
-            <p className="text-ink-3"><Tx k="No gaps were found by the automated checks." /></p>
+            <p className="text-ink-3">
+              <Tx k="No gaps were found by the automated checks." />
+            </p>
           ) : (
             <ul className="list-disc ps-5">
-              {review.rule_findings.map((f) => (
-                <li key={f.finding_id}>
+              {review.rule_findings.map((f, index) => (
+                <li key={`${f.finding_id}:${index}`}>
                   <span className="font-medium">{label(f.check)}:</span> {tr(f.description ?? "")}
                 </li>
               ))}
@@ -123,33 +158,59 @@ function ReviewCard({ review, onRequest }: { review: AIReview | undefined; onReq
   );
 }
 
-function SummaryCard({ summary, sessionId, reload }: { summary: AISummary | undefined; sessionId: string; reload: () => void }) {
+function SummaryCard({
+  summary,
+  sessionId,
+  reload,
+}: {
+  summary: AISummary | undefined;
+  sessionId: string;
+  reload: () => void;
+}) {
   const action = useAction();
-  const act = (path: string, body?: unknown) => async () => (await action.run(() => api.post(path, body))) && reload();
+  const act = (path: string, body?: unknown) => async () =>
+    (await action.run(() => api.post(path, body))) && reload();
   const generate = (
-    <Button variant="outline" size="sm" disabled={action.pending} onClick={act("/ai/summaries/generate/", { session: sessionId })}>
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={action.pending}
+      onClick={act("/ai/summaries/generate/", { session: sessionId })}
+    >
       <Tx k="Generate new version" />
     </Button>
   );
   if (!summary) {
     return (
       <Section id="summary" icon={FileText} tone="ai" title="AI session summary" action={generate}>
-        <p className="text-sm text-ink-3"><Tx k="No summary yet. One is generated when the session is completed." /></p>
+        <p className="text-sm text-ink-3">
+          <Tx k="No summary yet. One is generated when the session is completed." />
+        </p>
         <ErrorNote message={action.error} />
       </Section>
     );
   }
   return (
-    <Section id="summary" icon={FileText} tone="ai" title={`${tr("AI session summary")} (${tr("version")} ${summary.version})`} action={generate}>
+    <Section
+      id="summary"
+      icon={FileText}
+      tone="ai"
+      title={`${tr("AI session summary")} (${tr("version")} ${summary.version})`}
+      action={generate}
+    >
       <div className="space-y-3 text-sm">
         <div className="flex flex-wrap items-center gap-2">
           <Status value={summary.status} />
           <Status value={summary.released ? "released" : "not_released"} />
         </div>
         {summary.status === "ai_unavailable" && (
-          <p role="alert" className="rounded-md border border-bad/25 bg-bad-soft px-3 py-2 text-bad">
+          <p
+            role="alert"
+            className="rounded-md border border-bad/25 bg-bad-soft px-3 py-2 text-bad"
+          >
             {tr("AI summary generation failed or was rejected by validation")} (
-            {summary.ai_error.map((e) => label(e.code)).join("، ") || "—"}). {tr("The session record is unaffected.")}
+            {summary.ai_error.map((e) => label(e.code)).join("، ") || "—"}).{" "}
+            {tr("The session record is unaffected.")}
           </p>
         )}
         {summary.output && (
@@ -166,7 +227,9 @@ function SummaryCard({ summary, sessionId, reload }: { summary: AISummary | unde
               <div key={title}>
                 <h3 className="font-medium">{tr(title)}</h3>
                 {items.length === 0 ? (
-                  <p className="text-ink-3"><Tx k="None." /></p>
+                  <p className="text-ink-3">
+                    <Tx k="None." />
+                  </p>
                 ) : (
                   <ul className="list-disc ps-5" dir="auto">
                     {items.map((item) => (
@@ -177,7 +240,9 @@ function SummaryCard({ summary, sessionId, reload }: { summary: AISummary | unde
               </div>
             ))}
             <div className="rounded-md border border-line bg-chrome p-3">
-              <h3 className="font-medium"><Tx k="Patient-friendly version (shown to the patient only after release)" /></h3>
+              <h3 className="font-medium">
+                <Tx k="Patient-friendly version (shown to the patient only after release)" />
+              </h3>
               <p>{tr(summary.output.patient_summary ?? "")}</p>
             </div>
           </>
@@ -185,10 +250,17 @@ function SummaryCard({ summary, sessionId, reload }: { summary: AISummary | unde
         <div className="flex flex-wrap gap-2">
           {summary.status === "unverified" && (
             <>
-              <Button disabled={action.pending} onClick={act(`/ai/summaries/${summary.id}/verify/`)}>
+              <Button
+                disabled={action.pending}
+                onClick={act(`/ai/summaries/${summary.id}/verify/`)}
+              >
                 <Tx k="Verify summary" />
               </Button>
-              <Button variant="outline" disabled={action.pending} onClick={act(`/ai/summaries/${summary.id}/reject/`)}>
+              <Button
+                variant="outline"
+                disabled={action.pending}
+                onClick={act(`/ai/summaries/${summary.id}/reject/`)}
+              >
                 <Tx k="Reject" />
               </Button>
             </>
@@ -220,7 +292,13 @@ export default function DoctorSessionPage() {
       <Load from={session}>
         {(s) => (
           <div className="grid gap-5 xl:grid-cols-3 xl:grid-rows-[auto_auto_1fr] xl:items-start">
-            <Section id="measurements" icon={Activity} className="xl:col-span-2" title={`${tr(s.patient_name)} · ${dateTime(s.started_at ?? s.scheduled_start)}`} action={<Status value={s.status} />}>
+            <Section
+              id="measurements"
+              icon={Activity}
+              className="xl:col-span-2"
+              title={`${tr(s.patient_name)} · ${dateTime(s.started_at ?? s.scheduled_start)}`}
+              action={<Status value={s.status} />}
+            >
               <Measurements session={s} />
             </Section>
             <div className="space-y-5 xl:col-start-3 xl:row-span-3 xl:row-start-1">
@@ -233,10 +311,21 @@ export default function DoctorSessionPage() {
               />
               <SummaryCard summary={summaries.data?.[0]} sessionId={id} reload={summaries.reload} />
             </div>
-            <Section id="timeline" icon={ClipboardList} className="xl:col-span-2" title="Nursing actions and observations">
+            <Section
+              id="timeline"
+              icon={ClipboardList}
+              className="xl:col-span-2"
+              title="Nursing actions and observations"
+            >
               <Timeline session={s} />
             </Section>
-            <Section id="feedback" icon={MessageSquare} className="xl:col-span-2" title="Your feedback" description="The nursing team is notified. Feedback cannot be edited after sending.">
+            <Section
+              id="feedback"
+              icon={MessageSquare}
+              className="xl:col-span-2"
+              title="Your feedback"
+              description="The nursing team is notified. Feedback cannot be edited after sending."
+            >
               <ZForm
                 schema={feedbackSchema}
                 submitLabel="Send feedback"
@@ -245,13 +334,22 @@ export default function DoctorSessionPage() {
                     name: "kind",
                     label: "Type",
                     type: "select",
-                    options: [["feedback", "Feedback"], ["clarification_request", "Request clarification"]],
+                    options: [
+                      ["feedback", "Feedback"],
+                      ["clarification_request", "Request clarification"],
+                    ],
                   },
                   {
                     name: "nursing_action",
                     label: "About",
                     type: "select",
-                    options: [["", "The whole session"], ...s.nursing_actions.map((a): [string, string] => [a.id, `${label(a.action_type)}: ${tr(a.description).slice(0, 40)}`])],
+                    options: [
+                      ["", "The whole session"],
+                      ...s.nursing_actions.map((a): [string, string] => [
+                        a.id,
+                        `${label(a.action_type)}: ${tr(a.description).slice(0, 40)}`,
+                      ]),
+                    ],
                   },
                   { name: "text", label: "Feedback", type: "textarea" },
                 ]}
@@ -273,7 +371,8 @@ export default function DoctorSessionPage() {
                     <ul className="divide-y divide-line text-sm">
                       {rows.map((f) => (
                         <li key={f.id} className="py-2">
-                          <span className="font-medium">{label(f.kind)}</span> · {dateTime(f.created_at)}
+                          <span className="font-medium">{label(f.kind)}</span> ·{" "}
+                          {dateTime(f.created_at)}
                           <p dir="auto">{tr(f.text ?? "")}</p>
                         </li>
                       ))}

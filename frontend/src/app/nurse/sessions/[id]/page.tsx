@@ -1,27 +1,28 @@
 "use client";
 
-import { Activity, ClipboardCheck, ClipboardList, ListChecks, MessageSquare, Salad } from "lucide-react";
+import {
+  Activity,
+  ClipboardCheck,
+  ClipboardList,
+  ListChecks,
+  MessageSquare,
+  Salad,
+} from "lucide-react";
 import { useParams } from "next/navigation";
 import { z } from "zod";
 
-import {
-  Load,
-  Measurements,
-  type NavItem,
-  optionalNumber,
-  requiredText,
-  Section,
-  Shell,
-  Status,
-  Timeline,
-  ZForm,
-} from "@/components/app";
+import { Load, Section, Status } from "@/components/feedback";
+import { ZForm } from "@/components/forms";
+import { type NavItem, Shell } from "@/components/layout/shell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { api, type Feedback, type Finding, type SessionDetail } from "@/lib/api";
+import { Measurements, Timeline } from "@/features/clinical/components/session-record";
+import { api } from "@/lib/api";
 import { useRole } from "@/lib/auth";
-import { tr, Tx, useLocale } from "@/lib/i18n";
+import { optionalNumber, requiredText } from "@/lib/validation";
 import { dateTime, label } from "@/lib/format";
 import { useGet, useList } from "@/lib/hooks";
+import { tr, Tx, useLocale } from "@/lib/i18n";
+import { type Feedback, type Finding, type SessionDetail } from "@/lib/types";
 import { requiredNumber } from "@/lib/validation";
 
 const NAV: NavItem[] = [
@@ -56,14 +57,25 @@ const withUnits = (table: Record<string, string>): [string, string][] =>
   Object.entries(table).map(([kind, unit]) => [kind, `${label(kind)} (${tr(unit)})`]);
 
 const number = requiredNumber;
-const vitalSchema = z.object({ kind: z.string(), phase: z.enum(["pre", "intra", "post"]), value: number });
+const vitalSchema = z.object({
+  kind: z.string(),
+  phase: z.enum(["pre", "intra", "post"]),
+  value: number,
+});
 const readingSchema = z.object({ kind: z.string(), value: number });
-const actionSchema = z.object({ action_type: z.string(), description: requiredText("Description"), reason: z.string() });
+const actionSchema = z.object({
+  action_type: z.string(),
+  description: requiredText("Description"),
+  reason: z.string(),
+});
 const eventSchema = z.object({ event_type: z.string(), description: requiredText("Description") });
 const noteSchema = z.object({ text: requiredText("Note") });
 const resolveSchema = z.object({ resolution: requiredText("Resolution") });
 const startSchema = z.object({ pre_weight_kg: optionalNumber(20, 300) });
-const completeSchema = z.object({ post_weight_kg: optionalNumber(20, 300), uf_volume_ml: optionalNumber(0, 10000) });
+const completeSchema = z.object({
+  post_weight_kg: optionalNumber(20, 300),
+  uf_volume_ml: optionalNumber(0, 10000),
+});
 
 export default function NurseSessionPage() {
   useLocale();
@@ -79,26 +91,47 @@ export default function NurseSessionPage() {
     session.reload();
     checks.reload();
   };
-  const save = (path: string, extra: () => Record<string, unknown>) => async (values: Record<string, unknown>) => {
-    await api.post(path, { session: id, ...values, ...extra() });
-    refresh();
-  };
+  const save =
+    (path: string, extra: () => Record<string, unknown>) =>
+    async (values: Record<string, unknown>) => {
+      await api.post(path, { session: id, ...values, ...extra() });
+      refresh();
+    };
 
   return (
     <Shell
       title="Dialysis session"
       back="/nurse/"
-      nav={session.data ? [...NAV, { href: `/doctor/patients/${session.data.patient}/nutrition/`, label: "Nutrition", icon: Salad }] : NAV}
+      nav={
+        session.data
+          ? [
+              ...NAV,
+              {
+                href: `/doctor/patients/${session.data.patient}/nutrition/`,
+                label: "Nutrition",
+                icon: Salad,
+              },
+            ]
+          : NAV
+      }
     >
       <Load from={session}>
         {(s) => (
           <div className="grid gap-5 xl:grid-cols-3 xl:grid-rows-[auto_auto_1fr] xl:items-start">
-            <Section id="session" icon={Activity} className="xl:col-span-2" title={`${tr(s.patient_name)} · ${tr("scheduled")} ${dateTime(s.scheduled_start)}`} action={<Status value={s.status} />}>
+            <Section
+              id="session"
+              icon={Activity}
+              className="xl:col-span-2"
+              title={`${tr(s.patient_name)} · ${tr("scheduled")} ${dateTime(s.scheduled_start)}`}
+              action={<Status value={s.status} />}
+            >
               {s.status === "scheduled" && (
                 <ZForm
                   schema={startSchema}
                   submitLabel="Start session"
-                  fields={[{ name: "pre_weight_kg", label: "Pre-treatment weight (kg)", type: "number" }]}
+                  fields={[
+                    { name: "pre_weight_kg", label: "Pre-treatment weight (kg)", type: "number" },
+                  ]}
                   onSubmit={async (values) => {
                     await api.post(`/sessions/${id}/start/`, values);
                     refresh();
@@ -108,13 +141,23 @@ export default function NurseSessionPage() {
               {s.status !== "scheduled" && <Measurements session={s} />}
               {s.status === "in_progress" && (
                 <div className="mt-4 border-t border-line pt-4">
-                  <h3 className="mb-2 text-sm font-medium"><Tx k="Complete the session" /></h3>
+                  <h3 className="mb-2 text-sm font-medium">
+                    <Tx k="Complete the session" />
+                  </h3>
                   <ZForm
                     schema={completeSchema}
                     submitLabel="Complete session"
                     fields={[
-                      { name: "post_weight_kg", label: "Post-treatment weight (kg)", type: "number" },
-                      { name: "uf_volume_ml", label: "Ultrafiltration volume (mL)", type: "number" },
+                      {
+                        name: "post_weight_kg",
+                        label: "Post-treatment weight (kg)",
+                        type: "number",
+                      },
+                      {
+                        name: "uf_volume_ml",
+                        label: "Ultrafiltration volume (mL)",
+                        type: "number",
+                      },
                     ]}
                     onSubmit={async (values) => {
                       await api.post(`/sessions/${id}/complete/`, values);
@@ -135,20 +178,49 @@ export default function NurseSessionPage() {
               >
                 <Tabs defaultValue="vital">
                   <TabsList>
-                    <TabsTrigger value="vital"><Tx k="Vital sign" /></TabsTrigger>
-                    <TabsTrigger value="action"><Tx k="Nursing action" /></TabsTrigger>
-                    <TabsTrigger value="reading"><Tx k="Machine reading" /></TabsTrigger>
-                    <TabsTrigger value="event"><Tx k="Event / incident" /></TabsTrigger>
-                    <TabsTrigger value="note"><Tx k="Note" /></TabsTrigger>
+                    <TabsTrigger value="vital">
+                      <Tx k="Vital sign" />
+                    </TabsTrigger>
+                    <TabsTrigger value="action">
+                      <Tx k="Nursing action" />
+                    </TabsTrigger>
+                    <TabsTrigger value="reading">
+                      <Tx k="Machine reading" />
+                    </TabsTrigger>
+                    <TabsTrigger value="event">
+                      <Tx k="Event / incident" />
+                    </TabsTrigger>
+                    <TabsTrigger value="note">
+                      <Tx k="Note" />
+                    </TabsTrigger>
                   </TabsList>
                   <TabsContent value="vital" className="pt-3">
                     <ZForm
                       schema={vitalSchema}
                       submitLabel="Record vital sign"
                       fields={[
-                        { name: "kind", label: "Measurement", type: "select", options: withUnits(VITALS) },
-                        { name: "phase", label: "When", type: "select", options: [["pre", "Before treatment"], ["intra", "During treatment"], ["post", "After treatment"]] },
-                        { name: "value", label: "Value", type: "number", hint: "Enter the value in the unit shown." },
+                        {
+                          name: "kind",
+                          label: "Measurement",
+                          type: "select",
+                          options: withUnits(VITALS),
+                        },
+                        {
+                          name: "phase",
+                          label: "When",
+                          type: "select",
+                          options: [
+                            ["pre", "Before treatment"],
+                            ["intra", "During treatment"],
+                            ["post", "After treatment"],
+                          ],
+                        },
+                        {
+                          name: "value",
+                          label: "Value",
+                          type: "number",
+                          hint: "Enter the value in the unit shown.",
+                        },
                       ]}
                       onSubmit={save("/vitals/", () => ({ recorded_at: now() }))}
                     />
@@ -162,10 +234,23 @@ export default function NurseSessionPage() {
                           name: "action_type",
                           label: "Action",
                           type: "select",
-                          options: options(["access_care", "uf_adjustment", "treatment_pause", "fluid_bolus", "position_change", "physician_notified", "other"]),
+                          options: options([
+                            "access_care",
+                            "uf_adjustment",
+                            "treatment_pause",
+                            "fluid_bolus",
+                            "position_change",
+                            "physician_notified",
+                            "other",
+                          ]),
                         },
                         { name: "description", label: "What was done", type: "textarea" },
-                        { name: "reason", label: "Reason", type: "textarea", hint: "An action without a reason is flagged as incomplete." },
+                        {
+                          name: "reason",
+                          label: "Reason",
+                          type: "textarea",
+                          hint: "An action without a reason is flagged as incomplete.",
+                        },
                       ]}
                       onSubmit={save("/nursing-actions/", () => ({ performed_at: now() }))}
                     />
@@ -175,8 +260,18 @@ export default function NurseSessionPage() {
                       schema={readingSchema}
                       submitLabel="Record machine reading"
                       fields={[
-                        { name: "kind", label: "Reading", type: "select", options: withUnits(READINGS) },
-                        { name: "value", label: "Value", type: "number", hint: "Typed from the machine display. The system does not connect to the machine." },
+                        {
+                          name: "kind",
+                          label: "Reading",
+                          type: "select",
+                          options: withUnits(READINGS),
+                        },
+                        {
+                          name: "value",
+                          label: "Value",
+                          type: "number",
+                          hint: "Typed from the machine display. The system does not connect to the machine.",
+                        },
                       ]}
                       onSubmit={save("/device-readings/", () => ({ recorded_at: now() }))}
                     />
@@ -190,7 +285,16 @@ export default function NurseSessionPage() {
                           name: "event_type",
                           label: "Type",
                           type: "select",
-                          options: options(["symptom", "hypotension", "cramps", "clotting", "machine_alarm", "access_issue", "incident", "other"]),
+                          options: options([
+                            "symptom",
+                            "hypotension",
+                            "cramps",
+                            "clotting",
+                            "machine_alarm",
+                            "access_issue",
+                            "incident",
+                            "other",
+                          ]),
                         },
                         { name: "description", label: "What happened", type: "textarea" },
                       ]}
@@ -219,14 +323,19 @@ export default function NurseSessionPage() {
                 <Load from={checks}>
                   {(result) =>
                     result.checked_at === null ? (
-                      <p className="text-sm text-ink-3"><Tx k="Checks run after the first nursing action is recorded." /></p>
+                      <p className="text-sm text-ink-3">
+                        <Tx k="Checks run after the first nursing action is recorded." />
+                      </p>
                     ) : result.rule_findings.length === 0 ? (
-                      <p className="text-sm font-medium text-ok">{tr("No documentation gaps found")} ({dateTime(result.checked_at)}).</p>
+                      <p className="text-sm font-medium text-ok">
+                        {tr("No documentation gaps found")} ({dateTime(result.checked_at)}).
+                      </p>
                     ) : (
                       <ul className="list-disc space-y-1 ps-5 text-sm" data-testid="completeness">
                         {result.rule_findings.map((f) => (
                           <li key={f.finding_id}>
-                            <span className="font-medium">{label(f.check)}:</span> {tr(f.description ?? "")}
+                            <span className="font-medium">{label(f.check)}:</span>{" "}
+                            {tr(f.description ?? "")}
                           </li>
                         ))}
                       </ul>
@@ -240,7 +349,8 @@ export default function NurseSessionPage() {
                     <ul className="divide-y divide-line text-sm">
                       {rows.map((f) => (
                         <li key={f.id} className="py-2">
-                          <span className="font-medium">{label(f.kind)}</span> · {tr(f.author_name ?? "")} · {dateTime(f.created_at)}
+                          <span className="font-medium">{label(f.kind)}</span> ·{" "}
+                          {tr(f.author_name ?? "")} · {dateTime(f.created_at)}
                           <p dir="auto">{tr(f.text ?? "")}</p>
                         </li>
                       ))}
@@ -250,7 +360,12 @@ export default function NurseSessionPage() {
               </Section>
             </div>
 
-            <Section id="timeline" icon={ClipboardList} className="xl:col-span-2" title="Nursing action timeline">
+            <Section
+              id="timeline"
+              icon={ClipboardList}
+              className="xl:col-span-2"
+              title="Nursing action timeline"
+            >
               <Timeline
                 session={s}
                 renderEvent={(event) =>

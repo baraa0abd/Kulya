@@ -5,11 +5,11 @@ from datetime import date, timedelta
 import pytest
 from django.utils import timezone
 
-import ai.services
+import ai.gateway
 from ai.provider import MockProvider, ProviderError
 from clinical.models import CareAssignment, CaregiverConsent, LaboratoryReport, LaboratoryResult
 from core.models import Role
-from nutrition import engine, services, usda
+from nutrition import catalog, engine, services, usda
 from nutrition.ai import validate_analysis, validate_recognition, validate_report, validate_suggestions
 from nutrition.models import FoodItem, FoodLabReview, MealLog, MealRecommendation, NutritionReport, Recipe
 from workflow.models import Notification
@@ -20,7 +20,7 @@ TODAY = timezone.localdate()
 
 @pytest.fixture
 def foods(db) -> dict[str, FoodItem]:
-    services.load_catalog()
+    catalog.load_catalog()
     return {f.canonical_name: f for f in FoodItem.objects.all()}
 
 
@@ -52,7 +52,7 @@ def scripted(monkeypatch):
                     raise error
                 return transform(super().complete_json(prompt_id, payload, image))
 
-        monkeypatch.setattr(ai.services, "get_provider", Provider)
+        monkeypatch.setattr(ai.gateway, "get_provider", Provider)
 
     return install
 
@@ -137,10 +137,10 @@ def test_recipe_classification_uses_only_the_clinicians_limits() -> None:
 
 
 def test_food_matching_handles_arabic_and_plurals(foods) -> None:
-    assert services.match_food("boiled eggs").canonical_name == "egg, boiled"
-    assert services.match_food("رز").canonical_name == "white rice, cooked"
-    assert services.match_food("خُبز").canonical_name == "flatbread (khubz)"  # diacritics folded
-    assert services.match_food("spaceship") is None
+    assert catalog.match_food("boiled eggs").canonical_name == "egg, boiled"
+    assert catalog.match_food("رز").canonical_name == "white rice, cooked"
+    assert catalog.match_food("خُبز").canonical_name == "flatbread (khubz)"  # diacritics folded
+    assert catalog.match_food("spaceship") is None
 
 
 # --- diary ------------------------------------------------------------------------------------

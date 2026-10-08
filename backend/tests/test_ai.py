@@ -6,7 +6,7 @@ from datetime import date, timedelta
 import pytest
 from django.utils import timezone
 
-import ai.services
+import ai.gateway
 from ai import rag
 from ai.context import build_context, compute_metrics, record_ids
 from ai.models import AIReview, AISummary, ProtocolVersion
@@ -43,7 +43,7 @@ class ScriptedProvider(MockProvider):
 def scripted(monkeypatch):
     def install(transform=None, error=None) -> ScriptedProvider:
         provider = ScriptedProvider(transform, error)
-        monkeypatch.setattr(ai.services, "get_provider", lambda: provider)
+        monkeypatch.setattr(ai.gateway, "get_provider", lambda: provider)
         return provider
 
     return install

@@ -2,8 +2,16 @@ import { expect, test } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 
-test("patient records a meal directly, corrects it, filters the diary, and withdraws the test entry", async ({ page }) => {
-  const password = process.env.E2E_PASSWORD ?? fs.readFileSync(path.resolve(__dirname, "../../.env"), "utf8").match(/^DEMO_PASSWORD=(.+)$/m)?.[1].trim() ?? "";
+test("patient records a meal directly, corrects it, filters the diary, and withdraws the test entry", async ({
+  page,
+}) => {
+  const password =
+    process.env.E2E_PASSWORD ??
+    fs
+      .readFileSync(path.resolve(__dirname, "../../.env"), "utf8")
+      .match(/^DEMO_PASSWORD=(.+)$/m)?.[1]
+      .trim() ??
+    "";
   await page.addInitScript(() => localStorage.setItem("kulya.locale", "en"));
   await page.goto("/login/");
   await page.getByLabel("Username", { exact: true }).fill("patient1");
@@ -19,11 +27,16 @@ test("patient records a meal directly, corrects it, filters the diary, and withd
   await page.getByRole("button", { name: "Save meal", exact: true }).click();
   await expect(page.getByRole("alert").filter({ hasText: "Confirm each food" })).toBeVisible();
   await page.getByLabel("This food and amount are right").check();
-  const createdResponse = page.waitForResponse(response => response.url().endsWith("/api/nutrition/meals/") && response.request().method() === "POST");
+  const createdResponse = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/nutrition/meals/") && response.request().method() === "POST",
+  );
   await page.getByRole("button", { name: "Save meal", exact: true }).click();
   const created = await (await createdResponse).json();
   await expect(page.getByRole("heading", { name: "Meal saved", exact: true })).toBeVisible();
-  const access = await page.evaluate(() => JSON.parse(sessionStorage.getItem("kulya.session")!).access);
+  const access = await page.evaluate(
+    () => JSON.parse(sessionStorage.getItem("kulya.session")!).access,
+  );
   const headers = { Authorization: `Bearer ${access}` };
   try {
     expect(created.estimate.potassium_mg).toBe(294);
@@ -39,7 +52,9 @@ test("patient records a meal directly, corrects it, filters the diary, and withd
     expect(corrected.components[0].quantity).toBe("1.50");
     expect(corrected.estimate.potassium_mg).toBe(220.5);
     await page.getByLabel("Show meals").selectOption("confirmed");
-    await expect(page.locator("main li").filter({ hasText: "cucumber (1.5 piece)" }).first()).toBeVisible();
+    await expect(
+      page.locator("main li").filter({ hasText: "cucumber (1.5 piece)" }).first(),
+    ).toBeVisible();
     await page.getByLabel("From", { exact: true }).fill("2099-01-02");
     await expect(page.getByRole("alert").filter({ hasText: "valid date range" })).toBeVisible();
   } finally {

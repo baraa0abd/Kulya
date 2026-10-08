@@ -59,13 +59,20 @@ test("doctor signs in and sees only assigned patients and pending reviews", asyn
   await expect(page.getByRole("link", { name: "Review" }).first()).toBeVisible();
 });
 
-test("nurse starts a session, documents care, sees completeness checks, and completes it", async ({ page }) => {
+test("nurse starts a session, documents care, sees completeness checks, and completes it", async ({
+  page,
+}) => {
   await signIn(page, "nurse1", /\/nurse\/$/);
-  const access = await page.evaluate(() => JSON.parse(sessionStorage.getItem("kulya.session")!).access);
+  const access = await page.evaluate(
+    () => JSON.parse(sessionStorage.getItem("kulya.session")!).access,
+  );
   const headers = { Authorization: `Bearer ${access}` };
   const patients = await page.request.get("/api/patients/", { headers });
   const patient = (await patients.json()).results.find((p: { mrn: string }) => p.mrn === "SYN-001");
-  const created = await page.request.post("/api/sessions/", { headers, data: { patient: patient.id, scheduled_start: new Date().toISOString() } });
+  const created = await page.request.post("/api/sessions/", {
+    headers,
+    data: { patient: patient.id, scheduled_start: new Date().toISOString() },
+  });
   expect(created.status()).toBe(201);
   await page.goto(`/nurse/sessions/${(await created.json()).id}/`);
   await expect(page).toHaveURL(/\/nurse\/sessions\/[0-9a-f-]{36}\/$/);
@@ -96,7 +103,9 @@ test("nurse starts a session, documents care, sees completeness checks, and comp
   await expect(page.getByText("Completed", { exact: true })).toBeVisible();
 });
 
-test("doctor reviews the AI draft, sends feedback, verifies and releases the summary", async ({ page }) => {
+test("doctor reviews the AI draft, sends feedback, verifies and releases the summary", async ({
+  page,
+}) => {
   await signIn(page, "doctor1", /\/doctor\/$/);
   await page.goto(sessionUrl.replace("/nurse/", "/doctor/"));
   await expect(page.getByRole("heading", { name: "AI documentation review" })).toBeVisible();
@@ -104,7 +113,9 @@ test("doctor reviews the AI draft, sends feedback, verifies and releases the sum
   await expect(page.getByText("Action without reason").first()).toBeVisible();
   await expect(page.getByText("synthetic demo policy").first()).toBeVisible(); // cited protocol passage
 
-  await page.getByLabel("Feedback", { exact: true }).fill("E2E: please document the reason for this action.");
+  await page
+    .getByLabel("Feedback", { exact: true })
+    .fill("E2E: please document the reason for this action.");
   await page.getByRole("button", { name: "Send feedback" }).click();
   await expect(page.getByText("E2E: please document the reason for this action.")).toBeVisible();
 
@@ -116,13 +127,17 @@ test("doctor reviews the AI draft, sends feedback, verifies and releases the sum
 
 test("nurse sees the doctor's feedback", async ({ page }) => {
   await signIn(page, "nurse1", /\/nurse\/$/);
-  await expect(page.getByText("E2E: please document the reason for this action.").first()).toBeVisible();
+  await expect(
+    page.getByText("E2E: please document the reason for this action.").first(),
+  ).toBeVisible();
 });
 
 test("patient sees the released summary and nothing clinical", async ({ page }) => {
   await signIn(page, "patient1", /\/patient\/$/);
   await expect(page.getByText("Your dialysis session was recorded.").first()).toBeVisible();
-  expect(await page.getByText("Your dialysis session was recorded.").count()).toBeGreaterThanOrEqual(3);
+  expect(
+    await page.getByText("Your dialysis session was recorded.").count(),
+  ).toBeGreaterThanOrEqual(3);
   await expect(page.getByText("AI documentation review")).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Family sharing" })).toBeVisible();
 });
@@ -133,10 +148,21 @@ test("unauthorized users are denied", async ({ page }) => {
   await page.goto("/doctor/");
   await expect(page).toHaveURL(/\/patient\/$/);
   // And the API refuses regardless of what the browser shows.
-  const tokens = await page.evaluate(() => JSON.parse(window.sessionStorage.getItem("kulya.session") ?? "{}"));
+  const tokens = await page.evaluate(() =>
+    JSON.parse(window.sessionStorage.getItem("kulya.session") ?? "{}"),
+  );
   const headers = { Authorization: `Bearer ${tokens.access}` };
   expect((await page.request.get("/api/nursing-actions/", { headers })).status()).toBe(403);
-  expect((await page.request.get(`/api${sessionUrl.replace("/nurse", "")}`.replace("/sessions/", "/ai/reviews/?session=").replace(/\/$/, ""), { headers })).status()).toBe(403);
+  expect(
+    (
+      await page.request.get(
+        `/api${sessionUrl.replace("/nurse", "")}`
+          .replace("/sessions/", "/ai/reviews/?session=")
+          .replace(/\/$/, ""),
+        { headers },
+      )
+    ).status(),
+  ).toBe(403);
 
   // A nurse from another care team gets "Not found" for this patient's session.
   await signIn(page, "nurse4", /\/nurse\/$/);

@@ -5,7 +5,17 @@ The model only ever proposes foods or writes descriptive text. It never produces
 
 from typing import Any
 
-from ai.validation import _LIST, _NUMBER, _STR, _TIMESTAMP, FORBIDDEN, Errors, _error, _schema, _values
+from ai.output_validation import (
+    FORBIDDEN,
+    NUMBER_PATTERN,
+    TEXT_LIST_SCHEMA,
+    TEXT_SCHEMA,
+    TIMESTAMP_PATTERN,
+    Errors,
+    numeric_values,
+    schema_errors,
+    validation_error,
+)
 
 from .engine import NUTRIENTS, UNITS
 
@@ -46,7 +56,7 @@ RECOGNIZE_SCHEMA = {
                 },
             },
         },
-        "uncertainties": _LIST,
+        "uncertainties": TEXT_LIST_SCHEMA,
     },
 }
 ANALYZE_SCHEMA = {
@@ -62,14 +72,14 @@ ANALYZE_SCHEMA = {
                 "additionalProperties": False,
                 "required": ["text", "nutrient", "lab_result_ids"],
                 "properties": {
-                    "text": _STR,
+                    "text": TEXT_SCHEMA,
                     "nutrient": {"enum": NUTRIENTS},
                     "lab_result_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1, "maxItems": 20},
                 },
             },
         },
-        "limitations": _LIST,
-        "questions_for_clinician": _LIST,
+        "limitations": TEXT_LIST_SCHEMA,
+        "questions_for_clinician": TEXT_LIST_SCHEMA,
         "requires_clinician_review": {"const": True},
     },
 }
@@ -85,7 +95,7 @@ SUGGEST_SCHEMA = {
                 "type": "object",
                 "additionalProperties": False,
                 "required": ["recipe_id", "text"],
-                "properties": {"recipe_id": {"type": "string"}, "text": _STR},
+                "properties": {"recipe_id": {"type": "string"}, "text": TEXT_SCHEMA},
             },
         }
     },
@@ -95,10 +105,10 @@ REPORT_SCHEMA = {
     "additionalProperties": False,
     "required": ["overview", "observations", "questions_for_care_team", "limitations", "verification_status"],
     "properties": {
-        "overview": _STR,
-        "observations": _LIST,
-        "questions_for_care_team": _LIST,
-        "limitations": _LIST,
+        "overview": TEXT_SCHEMA,
+        "observations": TEXT_LIST_SCHEMA,
+        "questions_for_care_team": TEXT_LIST_SCHEMA,
+        "limitations": TEXT_LIST_SCHEMA,
         "verification_status": {"const": "unverified"},
     },
 }
@@ -106,23 +116,27 @@ REPORT_SCHEMA = {
 
 def _check_text(texts: list[tuple[str, str]], payload: dict) -> Errors:
     """No forbidden wording, and no number that is not a value in the structured input."""
-    known = _values(payload, with_free_text=False)
+    known = numeric_values(payload, with_free_text=False)
     errors: Errors = []
     for path, text in texts:
         lowered = text.lower()
         errors += [
-            _error("unsupported_clinical_claim", f"Contains wording outside the assistant's role: '{term}'.", path)
+            validation_error(
+                "unsupported_clinical_claim", f"Contains wording outside the assistant's role: '{term}'.", path
+            )
             for term in NUTRITION_FORBIDDEN
             if term in lowered
         ]
-        invented = sorted({n for n in _NUMBER.findall(_TIMESTAMP.sub(" ", text)) if float(n) not in known})
+        invented = sorted(
+            {n for n in NUMBER_PATTERN.findall(TIMESTAMP_PATTERN.sub(" ", text)) if float(n) not in known}
+        )
         if invented:
-            errors.append(_error("ungrounded_number", f"Numbers not present in the input: {invented}", path))
+            errors.append(validation_error("ungrounded_number", f"Numbers not present in the input: {invented}", path))
     return errors
 
 
 def validate_recognition(output: Any) -> Errors:
-    errors = _schema(output, RECOGNIZE_SCHEMA)
+    errors = schema_errors(output, RECOGNIZE_SCHEMA)
     if errors:
         return errors
     texts = [("uncertainties", t) for t in output["uncertainties"]]
@@ -130,7 +144,7 @@ def validate_recognition(output: Any) -> Errors:
 
 
 def validate_analysis(output: Any, payload: dict) -> Errors:
-    errors = _schema(output, ANALYZE_SCHEMA)
+    errors = schema_errors(output, ANALYZE_SCHEMA)
     if errors:
         return errors
     lab_ids = {lab["id"] for lab in payload["laboratory_results"]}
@@ -139,24 +153,24 @@ def validate_analysis(output: Any, payload: dict) -> Errors:
         texts.append((f"observations/{i}", item["text"]))
         unknown = sorted(set(item["lab_result_ids"]) - lab_ids)
         if unknown:
-            errors.append(_error("unknown_source_record", f"Cites results that were not provided: {unknown}"))
+            errors.append(validation_error("unknown_source_record", f"Cites results that were not provided: {unknown}"))
     return errors + _check_text(texts, payload)
 
 
 def validate_suggestions(output: Any, payload: dict) -> Errors:
-    errors = _schema(output, SUGGEST_SCHEMA)
+    errors = schema_errors(output, SUGGEST_SCHEMA)
     if errors:
         return errors
     known = {r["id"] for r in payload["recipes"]}
     unknown = sorted({e["recipe_id"] for e in output["explanations"]} - known)
     if unknown:
-        errors.append(_error("unknown_source_record", f"Explains recipes that were not provided: {unknown}"))
+        errors.append(validation_error("unknown_source_record", f"Explains recipes that were not provided: {unknown}"))
     texts = [(f"explanations/{i}", e["text"]) for i, e in enumerate(output["explanations"])]
     return errors + _check_text(texts, payload)
 
 
 def validate_report(output: Any, payload: dict) -> Errors:
-    errors = _schema(output, REPORT_SCHEMA)
+    errors = schema_errors(output, REPORT_SCHEMA)
     if errors:
         return errors
     texts = [("overview", output["overview"])]

@@ -5,7 +5,6 @@ ends in status 'ai_unavailable' with the deterministic findings kept; nothing is
 a successful AI result unless it passed validation; duplicates are collapsed by idempotency key."""
 
 import hashlib
-import logging
 import uuid
 
 from django.db import IntegrityError, transaction
@@ -21,30 +20,12 @@ from workflow.services import notify
 
 from . import rag
 from .context import build_context, fingerprint, record_ids
+from .gateway import call_model
 from .models import AIReview, AISummary
-from .provider import ProviderError, get_provider
 from .rules import protocol_unavailable_finding, run_checks
 from .validation import validate_review, validate_summary
 
-logger = logging.getLogger("kulya.ai")
 REVIEW_PROMPT, SUMMARY_PROMPT = "review_v1", "summary_v1"
-
-
-def _call_model(
-    prompt_id: str, payload: dict, image: tuple[str, str] | None = None
-) -> tuple[dict | None, list[dict], str]:
-    """Returns (output, errors, model_name). Never raises: every failure becomes a recorded error."""
-    try:
-        provider = get_provider()
-        output = (
-            provider.complete_json(prompt_id, payload, image) if image else provider.complete_json(prompt_id, payload)
-        )
-        return output, [], provider.model_name
-    except ProviderError as exc:
-        return None, [{"code": "provider_error", "path": "", "message": str(exc)}], ""
-    except Exception as exc:  # noqa: BLE001 - timeouts, config errors, anything else
-        logger.exception("ai call failed", extra={"ctx": {"prompt": prompt_id}})
-        return None, [{"code": "provider_error", "path": "", "message": type(exc).__name__}], ""
 
 
 def run_review(session_id, trigger: str, nonce: str = "") -> AIReview:
@@ -76,7 +57,7 @@ def run_review(session_id, trigger: str, nonce: str = "") -> AIReview:
         return AIReview.objects.get(idempotency_key=key)
 
     payload = {"context": ctx, "rule_findings": findings, "protocol_passages": passages}
-    output, errors, model_name = _call_model(REVIEW_PROMPT, payload)
+    output, errors, model_name = call_model(REVIEW_PROMPT, payload)
     if output is not None:
         errors = validate_review(output, str(session.id), ids, {p["id"] for p in passages})
     review.model_name = model_name
@@ -116,7 +97,7 @@ def run_summary(session_id, requested_by_id=None, force: bool = False) -> AISumm
         requested_by_id=requested_by_id,
     )
     payload = {"context": ctx, "rule_findings": run_checks(ctx)}
-    output, errors, model_name = _call_model(SUMMARY_PROMPT, payload)
+    output, errors, model_name = call_model(SUMMARY_PROMPT, payload)
     if output is not None:
         errors = validate_summary(output, ctx, ids)
     summary.model_name = model_name

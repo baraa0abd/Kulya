@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from nutrition.services import load_catalog
+from nutrition.catalog import load_catalog
 
 
 class Command(BaseCommand):

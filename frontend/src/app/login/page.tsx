@@ -3,12 +3,12 @@
 import { Activity } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-import { LanguageToggle, ZForm } from "@/components/app";
-import { loginSchema } from "@/lib/validation";
+import { LanguageToggle } from "@/components/feedback";
+import { ZForm } from "@/components/forms";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { HOME, useAuth } from "@/lib/auth";
 import { Tx, useLocale } from "@/lib/i18n";
-
+import { loginSchema } from "@/lib/validation";
 
 export default function LoginPage() {
   useLocale();
@@ -22,7 +22,9 @@ export default function LoginPage() {
             <span className="mb-3 flex size-11 items-center justify-center rounded-lg bg-brand text-white">
               <Activity className="size-6" aria-hidden />
             </span>
-            <h1 className="text-2xl font-semibold text-brand-strong"><Tx k="Kulya" /></h1>
+            <h1 className="text-2xl font-semibold text-brand-strong">
+              <Tx k="Kulya" />
+            </h1>
           </CardTitle>
           <CardDescription>
             <Tx k="Sign in. This demonstration runs on synthetic data only and is not a medical device." />

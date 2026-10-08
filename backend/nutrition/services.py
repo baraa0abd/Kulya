@@ -3,16 +3,13 @@ proposes foods and writes descriptive drafts, and every draft waits for a clinic
 
 import hashlib
 import json
-import re
-import unicodedata
 from datetime import date, timedelta
-from pathlib import Path
 
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.utils import timezone
 
-from ai.services import _call_model
+from ai.gateway import call_model
 from clinical.models import DialysisSession, LaboratoryResult, Patient
 from core.errors import Conflict
 from core.models import Role, User
@@ -31,6 +28,7 @@ from .ai import (
     validate_report,
     validate_suggestions,
 )
+from .catalog import match_food
 from .models import (
     FoodItem,
     FoodLabReview,
@@ -46,79 +44,10 @@ from .models import (
     ReviewStatus,
 )
 
-CATALOG = Path(__file__).parent / "data" / "catalog.json"
 CATALOG_LIMITATION = "Nutrient values are estimates from an unverified demo food catalogue."
 NOT_CAUSAL = (
     "Food records and laboratory results are shown together. This does not show that any food changed any result."
 )
-_ARABIC = str.maketrans({"أ": "ا", "إ": "ا", "آ": "ا", "ى": "ي", "ة": "ه", "ـ": ""})
-
-
-# --- Food catalogue ----------------------------------------------------------------------------
-
-
-def load_catalog() -> int:
-    """Load the bundled demo catalogue. Idempotent. Recipe nutrients are computed, never typed."""
-    data = json.loads(CATALOG.read_text(encoding="utf-8"))
-    foods = {}
-    for row in data["foods"]:
-        foods[row["name"]], _ = FoodItem.objects.update_or_create(
-            canonical_name=row["name"],
-            defaults={
-                "localized_names": {"en": row["name"], "ar": row["ar"], "ckb": row["ckb"]},
-                "nutrient_data_source": data["source"],
-                "nutrients_per_100g": dict(zip(engine.NUTRIENTS, row["n"], strict=True)),
-                "portion_grams": row["portions"],
-                "allergens": row["allergens"],
-            },
-        )
-    for row in data["recipes"]:
-        parts = [{"grams": grams, "per_100g": foods[name].nutrients_per_100g} for name, grams in row["ingredients"]]
-        Recipe.objects.update_or_create(
-            name=row["name"],
-            defaults={
-                "localized_names": {"en": row["name"], "ar": row["ar"]},
-                "meal_type": row["meal_type"],
-                "ingredients": [{"food": name, "grams": grams} for name, grams in row["ingredients"]],
-                "preparation_method": row["steps"],
-                "yield_weight": round(sum(grams for _, grams in row["ingredients"])),
-                "allergens": sorted({a for name, _ in row["ingredients"] for a in foods[name].allergens}),
-                "nutritional_estimate": engine.estimate(parts)["totals"],
-                "source": data["source"],
-            },
-        )
-    return len(foods)
-
-
-def _tokens(text: str) -> set[str]:
-    """Comparable word set: case, Arabic letter variants, diacritics and English plurals folded."""
-    text = "".join(c for c in unicodedata.normalize("NFKD", text.lower()) if not unicodedata.combining(c))
-    words = re.sub(r"[^\w\s]", " ", text.translate(_ARABIC)).split()
-    return {w[:-1] if w.isascii() and len(w) > 3 and w.endswith("s") else w for w in words}
-
-
-def match_food(name: str, foods: list[FoodItem] | None = None) -> FoodItem | None:
-    """Best catalogue match for a spoken or typed food name, or None. The person confirms it."""
-    # ponytail: scans the whole catalogue in Python; move to trigram search if it grows past a few thousand rows.
-    wanted, best, best_score = _tokens(name), None, (0.0, 0.0)
-    if not wanted:
-        return None
-    for food in foods if foods is not None else FoodItem.objects.all():
-        for label in {food.canonical_name, *food.localized_names.values()}:
-            have = _tokens(label)
-            shared = len(wanted & have)
-            score = (shared / len(wanted), shared / len(have)) if have else (0.0, 0.0)
-            if score[0] >= 0.5 and score > best_score:
-                best, best_score = food, score
-    return best
-
-
-def search_foods(query: str) -> list[FoodItem]:
-    foods = list(FoodItem.objects.all())
-    wanted = _tokens(query)
-    if not wanted:
-        return foods
-    return [f for f in foods if any(wanted & _tokens(n) for n in (f.canonical_name, *f.localized_names.values()))]
 
 
 # --- Meal diary --------------------------------------------------------------------------------
@@ -129,7 +58,7 @@ def recognize(user: User, patient: Patient, description: str, image: tuple[str, 
     only after the person confirms it through save_meal. The photo is not stored."""
     foods = list(FoodItem.objects.all())
     payload = {"description": description, "known_foods": [f.canonical_name for f in foods]}
-    output, errors, _ = _call_model(RECOGNIZE, payload, image)
+    output, errors, _ = call_model(RECOGNIZE, payload, image)
     if output is not None:
         errors = validate_recognition(output)
     audit(user, "meal_recognition_requested", None, patient=patient, photo=bool(image), ok=not errors)
@@ -275,7 +204,7 @@ def suggest(patient: Patient, user: User) -> list[MealRecommendation]:
                 for r, c, why in picks
             ],
         }
-        output, errors, _ = _call_model(SUGGEST, payload)
+        output, errors, _ = call_model(SUGGEST, payload)
         if output is not None:
             errors = validate_suggestions(output, payload)
         if errors:
@@ -435,7 +364,7 @@ def analyze(patient_id, start: date, end: date) -> FoodLabReview:
             "",
         )
     else:
-        output, errors, model_name = _call_model(ANALYZE, payload)
+        output, errors, model_name = call_model(ANALYZE, payload)
         if output is not None:
             errors = validate_analysis(output, payload)
     review.model_name = model_name
@@ -484,7 +413,7 @@ def build_report(patient_id, start: date, end: date) -> NutritionReport:
             report.save()
     except IntegrityError:
         return NutritionReport.objects.get(**period, fingerprint=mark)
-    output, errors, report.model_name = _call_model(REPORT, payload)
+    output, errors, report.model_name = call_model(REPORT, payload)
     if output is not None:
         errors = validate_report(output, payload)
     if errors:

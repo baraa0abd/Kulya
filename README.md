@@ -327,14 +327,15 @@ The full list is in [`.env.example`](.env.example).
 ## Tests
 
 ```bash
-cd backend  && .venv/Scripts/python -m pytest          # 141 tests, needs the db container
-cd frontend && npm test                                # 57 unit/component/API tests
-cd frontend && npx playwright install chromium && npm run e2e   # 28 E2E tests, needs the stack running
+cd backend  && .venv/Scripts/python -m pytest          # needs the db container
+cd frontend && npm test                                # unit, component and architecture tests
+cd frontend && npx playwright install chromium && npm run e2e   # needs the isolated test stack
+cd frontend && npm run typecheck && npm run lint && npm run format:check
 ```
 
 The E2E run adds synthetic sessions, measurements, diary entries, nutrition plan versions and
 report releases. Sign-in is limited to 10 per minute. For the complete suite, use the separate
-local test servers and test-only rate limit documented in `TEST_CASES.md`. The cases now create
+local test database and servers documented in `NUTRITION_WORKFLOW.md`. The cases now create
 their own workflow records and tolerate earlier runs; no database flush is required.
 
 All tests run offline against the mock provider; none needs an API key.
@@ -350,9 +351,11 @@ Kulya/
 │   ├── workflow/             doctor feedback, review tasks, notifications
 │   ├── nutrition/            food catalogue, diary, plans, suggestions, reports
 │   └── tests/                pytest suite (security, AI, workflow, nutrition)
-├── frontend/                 Next.js + TypeScript + Tailwind + shadcn/ui
+├── frontend/                 Next.js + TypeScript + Tailwind + Base UI primitives
 │   ├── src/app/              doctor, nurse, patient, dietitian screens
-│   ├── src/components/       shared shell, forms, clinical and nutrition panels
+│   ├── src/components/       shared shell, feedback, forms and UI primitives
+│   ├── src/features/         clinical records, notifications and nutrition workflows
+│   ├── src/lib/              transport, contracts, authentication and localization
 │   └── e2e/                  Playwright browser tests
 ├── docs/openapi.yaml         generated API schema (live at /api/docs/ on the backend)
 └── docker-compose.yml        db, redis, backend, worker, frontend
@@ -366,7 +369,7 @@ Kulya/
 | Data | PostgreSQL 16 with pgvector |
 | Background jobs | Celery + Redis |
 | AI | Provider abstraction: offline mock (default) or Anthropic Claude; JSON Schema validation |
-| Web | Next.js (App Router), TypeScript, Tailwind CSS, shadcn/ui, Recharts, React Hook Form + Zod |
+| Web | Next.js (App Router), TypeScript, Tailwind CSS, Base UI, Recharts, React Hook Form + Zod |
 | Tests | pytest, Vitest + Testing Library, Playwright |
 | Delivery | Docker Compose, GitHub Actions workflow |
 
@@ -390,6 +393,7 @@ Stated plainly, because this is health software:
 | Document | What is in it |
 |---|---|
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Apps, data rules, authorization, the AI features in detail |
+| [`CODE_STRUCTURE.md`](CODE_STRUCTURE.md) | Code ownership, dependency rules, cleanup decisions and research sources |
 | [`SECURITY.md`](SECURITY.md) | What is enforced and tested, known gaps, what real use requires |
 | [`DEPLOYMENT.md`](DEPLOYMENT.md) | Running the stack and what production would still need |
 | [`TEST_REPORT.md`](TEST_REPORT.md) | What was run, the results, and what was not tested |

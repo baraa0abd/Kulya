@@ -18,7 +18,7 @@ _STOP = {"the", "a", "an", "of", "and", "or", "to", "is", "in", "for", "be", "wi
 
 
 class HashingEmbedder:
-    """ponytail: deterministic feature-hashing embedding (lexical overlap, not meaning). It needs no
+    """Deterministic feature-hashing embedding (lexical overlap, not meaning). It needs no
     network or key, which keeps tests and the offline demo reproducible. Swap in a real embedding
     model behind `embed()` before relying on retrieval quality."""
 

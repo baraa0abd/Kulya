@@ -1,14 +1,20 @@
-"""Strict validation of model output. A response that fails any check here is rejected: it is
-never stored as a successful AI result."""
+"""Clinical review and summary output validation, including source and measurement grounding."""
 
-import re
 from typing import Any
 
-from jsonschema import Draft202012Validator
+from .output_validation import (
+    FORBIDDEN,
+    NUMBER_PATTERN,
+    TEXT_LIST_SCHEMA,
+    TEXT_SCHEMA,
+    TIMESTAMP_PATTERN,
+    Errors,
+    numeric_values,
+    schema_errors,
+    validation_error,
+)
 
-_STR = {"type": "string", "minLength": 1, "maxLength": 2000}
 _IDS = {"type": "array", "items": {"type": "string"}, "maxItems": 100}
-_LIST = {"type": "array", "items": _STR, "maxItems": 60}
 
 REVIEW_SCHEMA = {
     "type": "object",
@@ -18,8 +24,8 @@ REVIEW_SCHEMA = {
         "questions_for_doctor", "requires_human_review", "status",
     ],
     "properties": {
-        "session_id": _STR,
-        "summary": _STR,
+        "session_id": TEXT_SCHEMA,
+        "summary": TEXT_SCHEMA,
         "documentation_gaps": {
             "type": "array",
             "maxItems": 60,
@@ -28,8 +34,8 @@ REVIEW_SCHEMA = {
                 "additionalProperties": False,
                 "required": ["finding_id", "description", "source_record_ids", "protocol_reference_ids"],
                 "properties": {
-                    "finding_id": _STR,
-                    "description": _STR,
+                    "finding_id": TEXT_SCHEMA,
+                    "description": TEXT_SCHEMA,
                     "source_record_ids": {**_IDS, "minItems": 1},
                     "protocol_reference_ids": _IDS,
                 },
@@ -43,13 +49,13 @@ REVIEW_SCHEMA = {
                 "additionalProperties": False,
                 "required": ["description", "evidence", "requires_clinician_assessment"],
                 "properties": {
-                    "description": _STR,
+                    "description": TEXT_SCHEMA,
                     "evidence": {**_IDS, "minItems": 1},
                     "requires_clinician_assessment": {"const": True},
                 },
             },
         },
-        "questions_for_doctor": _LIST,
+        "questions_for_doctor": TEXT_LIST_SCHEMA,
         "requires_human_review": {"const": True},
         "status": {"const": "pending_review"},
     },
@@ -63,13 +69,13 @@ SUMMARY_SCHEMA = {
         "nursing_actions", "missing_information", "source_record_ids", "generated_at", "verification_status",
     ],
     "properties": {
-        "session_id": _STR,
-        "clinical_summary": _STR,
-        "patient_summary": _STR,
+        "session_id": TEXT_SCHEMA,
+        "clinical_summary": TEXT_SCHEMA,
+        "patient_summary": TEXT_SCHEMA,
         "treatment_duration_minutes": {"type": ["number", "null"]},
-        "documented_events": _LIST,
-        "nursing_actions": _LIST,
-        "missing_information": _LIST,
+        "documented_events": TEXT_LIST_SCHEMA,
+        "nursing_actions": TEXT_LIST_SCHEMA,
+        "missing_information": TEXT_LIST_SCHEMA,
         "source_record_ids": {**_IDS, "minItems": 1},
         "generated_at": {"type": "string", "pattern": r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}"},
         "verification_status": {"const": "unverified"},
@@ -78,94 +84,63 @@ SUMMARY_SCHEMA = {
 
 # Wording that would turn documentation support into diagnosis, prescribing, grading staff, or
 # machine control. A blunt net: the reviewing doctor remains the real control.
-FORBIDDEN = [
-    "diagnos", "we prescribe", "i prescribe", "should be prescribed", "recommend prescribing",
-    "we recommend", "is recommended", "should administer", "should receive",
-    "increase the dose", "decrease the dose", "reduce the dose", "start taking", "stop taking",
-    "incompetent", "negligen", "malpractice", "set the machine", "adjust the machine", "set the dialysate",
-]  # fmt: skip
-_NUMBER = re.compile(r"\d+(?:\.\d+)?")
-_TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2})?)?|\d{1,2}:\d{2}")
-Errors = list[dict[str, str]]
-
-
-def _error(code: str, message: str, path: str = "") -> dict[str, str]:
-    return {"code": code, "path": path, "message": message}
-
-
-def _schema(payload: Any, schema: dict) -> Errors:
-    return [
-        _error("schema_invalid", e.message[:300], "/".join(map(str, e.absolute_path)))
-        for e in Draft202012Validator(schema).iter_errors(payload)
-    ]
 
 
 def _forbidden(texts: list[tuple[str, str]]) -> Errors:
     return [
-        _error("unsupported_clinical_claim", f"Contains wording outside the assistant's role: '{term}'.", path)
+        validation_error(
+            "unsupported_clinical_claim", f"Contains wording outside the assistant's role: '{term}'.", path
+        )
         for path, text in texts
         for term in FORBIDDEN
         if term in text.lower()
     ]
 
 
-FREE_TEXT_KEYS = {"description", "reason", "text", "resolution"}
-
-
-def _values(node: Any, with_free_text: bool, key: str = "") -> set[float]:
-    """Every numeric value in the context (as magnitudes), optionally plus numbers quoted in free text.
-    Ids and timestamps are strings and are deliberately not a source of numbers."""
-    if isinstance(node, dict):
-        return set().union(*(_values(v, with_free_text, k) for k, v in node.items()))
-    if isinstance(node, list):
-        return set().union(*(_values(v, with_free_text, key) for v in node))
-    if isinstance(node, (int, float)) and not isinstance(node, bool):
-        return {abs(float(node))}
-    if isinstance(node, str) and with_free_text and key in FREE_TEXT_KEYS:
-        return {float(n) for n in _NUMBER.findall(node)}
-    return set()
-
-
 def validate_review(output: Any, session_id: str, record_ids: set[str], passage_ids: set[str]) -> Errors:
-    errors = _schema(output, REVIEW_SCHEMA)
+    errors = schema_errors(output, REVIEW_SCHEMA)
     if errors:
         return errors
     if output["session_id"] != session_id:
-        errors.append(_error("wrong_session", "Output refers to a different session.", "session_id"))
+        errors.append(validation_error("wrong_session", "Output refers to a different session.", "session_id"))
     texts = [("summary", output["summary"])] + [("questions_for_doctor", q) for q in output["questions_for_doctor"]]
     for i, gap in enumerate(output["documentation_gaps"]):
         path = f"documentation_gaps/{i}"
         texts.append((path, gap["description"]))
         unknown = sorted(set(gap["source_record_ids"]) - record_ids)
         if unknown:
-            errors.append(_error("unknown_source_record", f"Cites records that were not provided: {unknown}", path))
+            errors.append(
+                validation_error("unknown_source_record", f"Cites records that were not provided: {unknown}", path)
+            )
         invented = sorted(set(gap["protocol_reference_ids"]) - passage_ids)
         if invented:
             errors.append(
-                _error("unknown_protocol_reference", f"Cites passages that were not retrieved: {invented}", path)
+                validation_error(
+                    "unknown_protocol_reference", f"Cites passages that were not retrieved: {invented}", path
+                )
             )
     for i, item in enumerate(output["protocol_discrepancies"]):
         path = f"protocol_discrepancies/{i}"
         texts.append((path, item["description"]))
         unknown = sorted(set(item["evidence"]) - record_ids - passage_ids)
         if unknown:
-            errors.append(_error("unknown_source_record", f"Evidence was not provided: {unknown}", path))
+            errors.append(validation_error("unknown_source_record", f"Evidence was not provided: {unknown}", path))
     return errors + _forbidden(texts)
 
 
 def validate_summary(output: Any, context: dict, record_ids: set[str]) -> Errors:
-    errors = _schema(output, SUMMARY_SCHEMA)
+    errors = schema_errors(output, SUMMARY_SCHEMA)
     if errors:
         return errors
     if output["session_id"] != context["session"]["id"]:
-        errors.append(_error("wrong_session", "Output refers to a different session.", "session_id"))
+        errors.append(validation_error("wrong_session", "Output refers to a different session.", "session_id"))
     unknown = sorted(set(output["source_record_ids"]) - record_ids)
     if unknown:
-        errors.append(_error("unknown_source_record", f"Cites records that were not provided: {unknown}"))
+        errors.append(validation_error("unknown_source_record", f"Cites records that were not provided: {unknown}"))
     expected = context["metrics"]["actual_duration"]["value"]
     if output["treatment_duration_minutes"] != expected:
         errors.append(
-            _error(
+            validation_error(
                 "duration_mismatch",
                 f"Duration must equal the backend calculation ({expected}).",
                 "treatment_duration_minutes",
@@ -175,16 +150,20 @@ def validate_summary(output: Any, context: dict, record_ids: set[str]) -> Errors
     # fields (metrics, vitals, readings, labs, session, prescription). A number that exists only
     # inside free text, such as a nursing note, is not accepted as a measurement there; the quoting
     # lists may repeat free text. Dates and clock times are not treated as measurements.
-    structured = _values(context, with_free_text=False)
-    everything = _values(context, with_free_text=True)
+    structured = numeric_values(context, with_free_text=False)
+    everything = numeric_values(context, with_free_text=True)
     prose = [("clinical_summary", output["clinical_summary"]), ("patient_summary", output["patient_summary"])]
     quotes = [(n, t) for n in ("documented_events", "nursing_actions", "missing_information") for t in output[n]]
     for known, texts in ((structured, prose), (everything, quotes)):
         for path, text in texts:
-            invented = sorted({n for n in _NUMBER.findall(_TIMESTAMP.sub(" ", text)) if float(n) not in known})
+            invented = sorted(
+                {n for n in NUMBER_PATTERN.findall(TIMESTAMP_PATTERN.sub(" ", text)) if float(n) not in known}
+            )
             if invented:
                 errors.append(
-                    _error("ungrounded_number", f"Numbers not present in the session records: {invented}", path)
+                    validation_error(
+                        "ungrounded_number", f"Numbers not present in the session records: {invented}", path
+                    )
                 )
     texts = prose + quotes
     return errors + _forbidden(texts)

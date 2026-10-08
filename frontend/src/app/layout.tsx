@@ -22,9 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ar" dir="rtl" className={`${inter.variable} ${arabic.variable} h-full antialiased`}>
       <body className="min-h-full font-sans">
         <LocaleBoot />
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

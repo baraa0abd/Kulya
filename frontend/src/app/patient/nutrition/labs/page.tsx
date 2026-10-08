@@ -1,4 +1,4 @@
-import { PatientNutrition } from "@/components/nutrition";
+import { PatientNutrition } from "@/features/nutrition/components/workspaces";
 
 export default function Page() {
   return <PatientNutrition view="labs" />;

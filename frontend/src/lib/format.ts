@@ -4,9 +4,12 @@ import { getLocale, tr } from "./i18n";
 const format = (options: Intl.DateTimeFormatOptions) =>
   new Intl.DateTimeFormat(getLocale() === "ar" ? "ar-u-nu-latn" : "en-GB", options);
 
-export const dateTime = (iso: string | null | undefined) => (iso ? format({ dateStyle: "medium", timeStyle: "short" }).format(new Date(iso)) : "—");
-export const dateOnly = (iso: string | null | undefined) => (iso ? format({ dateStyle: "medium" }).format(new Date(iso)) : "—");
-export const timeOnly = (iso: string | null | undefined) => (iso ? format({ timeStyle: "short" }).format(new Date(iso)) : "—");
+export const dateTime = (iso: string | null | undefined) =>
+  iso ? format({ dateStyle: "medium", timeStyle: "short" }).format(new Date(iso)) : "—";
+export const dateOnly = (iso: string | null | undefined) =>
+  iso ? format({ dateStyle: "medium" }).format(new Date(iso)) : "—";
+export const timeOnly = (iso: string | null | undefined) =>
+  iso ? format({ timeStyle: "short" }).format(new Date(iso)) : "—";
 
 /** "systolic_bp" -> "Systolic bp", then translated for the current language. */
 export const label = (code: string) => {

@@ -3,11 +3,15 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
-import { NutrientTray } from "@/components/nutrition";
-import { AiLabel, Load, Measurements, optionalNumber, requiredText, Status, Timeline, ZForm } from "@/components/app";
-import { ApiError, describeError, type SessionDetail } from "@/lib/api";
+import { AiLabel, Load, Status } from "@/components/feedback";
+import { ZForm } from "@/components/forms";
+import { Measurements, Timeline } from "@/features/clinical/components/session-record";
+import { NutrientTray } from "@/features/nutrition/components/common";
+import { ApiError, describeError } from "@/lib/api";
+import { optionalNumber, requiredText } from "@/lib/validation";
 import { label, minutesBetween, weekOf, withUnit } from "@/lib/format";
 import { setLocale, tr } from "@/lib/i18n";
+import { type SessionDetail } from "@/lib/types";
 
 const session: SessionDetail = {
   id: "s1",
@@ -22,15 +26,47 @@ const session: SessionDetail = {
   post_weight_kg: null,
   uf_volume_ml: 2000,
   vitals: [
-    { id: "v1", kind: "systolic_bp", value: "140.00", unit: "mmHg", phase: "pre", source: "measured", verification_status: "verified", recorded_at: "2026-10-01T08:01:00Z" },
+    {
+      id: "v1",
+      kind: "systolic_bp",
+      value: "140.00",
+      unit: "mmHg",
+      phase: "pre",
+      source: "measured",
+      verification_status: "verified",
+      recorded_at: "2026-10-01T08:01:00Z",
+    },
   ],
   device_readings: [],
   nursing_actions: [
-    { id: "a1", session: "s1", author_name: "Nurse Demo", action_type: "fluid_bolus", description: "Saline given.", reason: "", performed_at: "2026-10-01T10:00:00Z", amends: null },
+    {
+      id: "a1",
+      session: "s1",
+      author_name: "Nurse Demo",
+      action_type: "fluid_bolus",
+      description: "Saline given.",
+      reason: "",
+      performed_at: "2026-10-01T10:00:00Z",
+      amends: null,
+    },
   ],
-  nursing_notes: [{ id: "n1", author_name: "Nurse Demo", text: "Patient comfortable.", created_at: "2026-10-01T08:30:00Z" }],
+  nursing_notes: [
+    {
+      id: "n1",
+      author_name: "Nurse Demo",
+      text: "Patient comfortable.",
+      created_at: "2026-10-01T08:30:00Z",
+    },
+  ],
   events: [
-    { id: "e1", event_type: "hypotension", description: "Low reading.", occurred_at: "2026-10-01T09:55:00Z", resolution: "", resolved_at: null },
+    {
+      id: "e1",
+      event_type: "hypotension",
+      description: "Low reading.",
+      occurred_at: "2026-10-01T09:55:00Z",
+      resolution: "",
+      resolved_at: null,
+    },
   ],
 };
 
@@ -48,7 +84,9 @@ describe("formatting", () => {
     expect(label("action_without_reason")).toBe("Action without reason");
   });
   it("turns API errors into readable text including field messages", () => {
-    const error = new ApiError(400, "validation_error", "Invalid input.", { value: ["Outside the plausible range."] });
+    const error = new ApiError(400, "validation_error", "Invalid input.", {
+      value: ["Outside the plausible range."],
+    });
     expect(describeError(error)).toBe("Invalid input. value: Outside the plausible range.");
     expect(describeError(new Error("x"))).toMatch(/went wrong/);
   });
@@ -57,15 +95,27 @@ describe("formatting", () => {
 describe("states and labels", () => {
   const base = { reload: vi.fn() };
   it("renders loading, error with retry, empty and data states", async () => {
-    const { rerender } = render(<Load from={{ ...base, data: null, error: null, loading: true }}>{() => "data"}</Load>);
+    const { rerender } = render(
+      <Load from={{ ...base, data: null, error: null, loading: true }}>{() => "data"}</Load>,
+    );
     expect(screen.getByText("Loading…")).toBeInTheDocument();
-    rerender(<Load from={{ ...base, data: null, error: "Not found.", loading: false }}>{() => "data"}</Load>);
+    rerender(
+      <Load from={{ ...base, data: null, error: "Not found.", loading: false }}>
+        {() => "data"}
+      </Load>,
+    );
     expect(screen.getByRole("alert")).toHaveTextContent("Not found.");
     await userEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(base.reload).toHaveBeenCalled();
-    rerender(<Load from={{ ...base, data: [], error: null, loading: false }} empty="No rows.">{() => "data"}</Load>);
+    rerender(
+      <Load from={{ ...base, data: [], error: null, loading: false }} empty="No rows.">
+        {() => "data"}
+      </Load>,
+    );
     expect(screen.getByText("No rows.")).toBeInTheDocument();
-    rerender(<Load from={{ ...base, data: [1], error: null, loading: false }}>{() => "data"}</Load>);
+    rerender(
+      <Load from={{ ...base, data: [1], error: null, loading: false }}>{() => "data"}</Load>,
+    );
     expect(screen.getByText("data")).toBeInTheDocument();
   });
   it("labels AI content and review status", () => {
@@ -112,12 +162,16 @@ describe("ZForm", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
   it("submits parsed values and shows a server error", async () => {
-    const onSubmit = vi.fn().mockRejectedValueOnce(new ApiError(409, "invalid_state", "Session is completed."));
+    const onSubmit = vi
+      .fn()
+      .mockRejectedValueOnce(new ApiError(409, "invalid_state", "Session is completed."));
     render(<ZForm schema={schema} fields={fields} submitLabel="Send" onSubmit={onSubmit} />);
     await userEvent.type(screen.getByLabelText("Feedback"), "Please clarify");
     await userEvent.type(screen.getByLabelText("Amount"), "12.5");
     await userEvent.click(screen.getByRole("button", { name: "Send" }));
-    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith({ text: "Please clarify", amount: 12.5 }));
+    await waitFor(() =>
+      expect(onSubmit).toHaveBeenCalledWith({ text: "Please clarify", amount: 12.5 }),
+    );
     expect(await screen.findByText("Session is completed.")).toBeInTheDocument();
   });
 });
@@ -145,7 +199,15 @@ describe("Arabic interface", () => {
 
 describe("nutrition", () => {
   it("shows an unknown nutrient as not available, never as zero", () => {
-    const values = { energy_kcal: 130, protein_g: 0, sodium_mg: null, potassium_mg: 55.3, phosphorus_mg: null, calcium_mg: 10, fluid_ml: 68 };
+    const values = {
+      energy_kcal: 130,
+      protein_g: 0,
+      sodium_mg: null,
+      potassium_mg: 55.3,
+      phosphorus_mg: null,
+      calcium_mg: 10,
+      fluid_ml: 68,
+    };
     render(<NutrientTray values={values} />);
     expect(screen.getByText("55.3 mg")).toBeInTheDocument();
     expect(screen.getByText("0 g")).toBeInTheDocument(); // a real zero stays a zero

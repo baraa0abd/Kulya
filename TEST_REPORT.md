@@ -1,5 +1,26 @@
 # Test report
 
+## Architecture cleanup — 2026-10-08
+
+- Final backend suite: **147 passed**. Ruff lint and format checks passed.
+- Final frontend suite: **100 passed**, including dependency-direction, import-cycle and
+  pure meal-validation tests. TypeScript, ESLint and Prettier checks passed.
+- Chromium: **37 passed in the full run**, then the one Arabic nurse case passed separately
+  after Next.js recompilation settled: **38 passing cases in total**. The earlier failure
+  displayed Next's error document, rather than an application authorization or validation error.
+- After correcting duplicate React keys in the review display, the doctor screen and full
+  clinical workflow were rechecked: **8 targeted browser cases passed**.
+- Production Next.js build passed, including static and dynamic role routes, using a separate
+  output directory. The Dockerfile was updated but a new Docker image was not built.
+- Lockfile installation dry run passed without `--legacy-peer-deps`. Removed 220 installed
+  packages with the unused generator dependencies. Production dependency audit: **0 advisories**;
+  **5 high development-toolchain advisories remain**, documented in `CODE_STRUCTURE.md`.
+- Role policies, current consent scoping, audit history, nutrient arithmetic, clinician review
+  and release behavior retain regression coverage. Browser writes used the isolated test database.
+
+See [CODE_STRUCTURE.md](CODE_STRUCTURE.md) for ownership, dependency rules, removal decisions
+and research sources. Original system, data and AI documentation remains in `ARCHITECTURE.md`.
+
 ## Nutrition usability and data integrity — 2026-10-08
 
 - Full backend suite: **144 passed**. Frontend suite: **88 passed**. TypeScript and ESLint passed.

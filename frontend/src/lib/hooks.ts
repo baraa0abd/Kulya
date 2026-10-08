@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { api, describeError } from "./api";
+import { api, describeError } from "@/lib/api";
 
 export interface Loaded<T> {
   data: T | null;
@@ -23,14 +23,13 @@ function useLoad<T>(path: string | null, fetcher: (path: string) => Promise<T>):
     let cancelled = false;
     fetcher(path).then(
       (data) => !cancelled && setState({ data, error: null, loading: false }),
-      (error: unknown) => !cancelled && setState({ data: null, error: describeError(error), loading: false }),
+      (error: unknown) =>
+        !cancelled && setState({ data: null, error: describeError(error), loading: false }),
     );
     return () => {
       cancelled = true;
     };
-    // fetcher is one of two stable module-level functions
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [path, version]);
+  }, [path, version, fetcher]);
   const reload = useCallback(() => setVersion((v) => v + 1), []);
   return { ...state, reload };
 }

@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from clinical.models import CareAssignment, Patient
 from core.models import Organization, Role, User
+from nutrition import catalog
 
 from . import services
 from .models import FoodItem
@@ -64,7 +65,7 @@ def seed_nutrition(password: str, organization: str) -> bool:
     org = Organization.objects.filter(name=organization).first()
     if org is None or User.objects.filter(username="dietitian1").exists():
         return False
-    services.load_catalog()
+    catalog.load_catalog()
     foods = {f.canonical_name: f for f in FoodItem.objects.all()}
     dietitian = User(username="dietitian1", role=Role.DIETITIAN, display_name="Dietitian Demo", organization=org)
     dietitian.set_password(password)
