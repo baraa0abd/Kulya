@@ -1060,6 +1060,578 @@ paths:
               schema:
                 $ref: '#/components/schemas/NursingNote'
           description: ''
+  /api/nutrition/ai/analyze/:
+    post:
+      operationId: nutrition_ai_analyze_create
+      description: Draft a food-and-laboratory review for a clinician.
+      tags:
+      - nutrition
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Period'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Period'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Period'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FoodLabReview'
+          description: ''
+  /api/nutrition/ai/recognize/:
+    post:
+      operationId: nutrition_ai_recognize_create
+      description: Text, speech transcript or photo -> editable food candidates. Nothing
+        is saved here.
+      tags:
+      - nutrition
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Recognize'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Recognize'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Recognize'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/nutrition/ai/suggestions/:
+    get:
+      operationId: nutrition_ai_suggestions_list
+      tags:
+      - nutrition
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Recommendation'
+          description: ''
+    post:
+      operationId: nutrition_ai_suggestions_create
+      tags:
+      - nutrition
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Period'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Period'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Period'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Recommendation'
+          description: ''
+  /api/nutrition/ai/transcribe/:
+    post:
+      operationId: nutrition_ai_transcribe_create
+      description: |-
+        Server-side speech-to-text is not built: the web app uses the browser's own recognition and
+        sends the resulting text to /ai/recognize/. This endpoint says so instead of pretending.
+      tags:
+      - nutrition
+      security:
+      - jwtAuth: []
+      responses:
+        '501':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/nutrition/foods/:
+    get:
+      operationId: nutrition_foods_list
+      description: Catalogue search (`?q=`). `?source=usda` also imports matches from
+        USDA FoodData Central.
+      tags:
+      - nutrition
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Food'
+          description: ''
+  /api/nutrition/lab-reviews/{id}/review/:
+    post:
+      operationId: nutrition_lab_reviews_review_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - nutrition
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Decision'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Decision'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Decision'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FoodLabReview'
+          description: ''
+  /api/nutrition/meals/:
+    get:
+      operationId: nutrition_meals_list
+      description: The food diary. Only the patient, or a caregiver the patient allowed
+        to log meals, may write.
+      tags:
+      - nutrition
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Meal'
+          description: ''
+    post:
+      operationId: nutrition_meals_create
+      description: The food diary. Only the patient, or a caregiver the patient allowed
+        to log meals, may write.
+      tags:
+      - nutrition
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Meal'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Meal'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Meal'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Meal'
+          description: ''
+  /api/nutrition/meals/{id}/:
+    get:
+      operationId: nutrition_meals_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - nutrition
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Meal'
+          description: ''
+    patch:
+      operationId: nutrition_meals_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - nutrition
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMeal'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMeal'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMeal'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Meal'
+          description: ''
+    delete:
+      operationId: nutrition_meals_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - nutrition
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/nutrition/overview/:
+    get:
+      operationId: nutrition_overview_retrieve
+      description: One patient's nutrition picture (`?patient=`), or one row per reachable
+        patient.
+      tags:
+      - nutrition
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/nutrition/patients/{id}/lab-trends/:
+    get:
+      operationId: nutrition_patients_lab_trends_retrieve
+      description: Laboratory results next to diary averages, plus the food-and-lab
+        reviews written about them.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - nutrition
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/nutrition/patients/{id}/observations/:
+    get:
+      operationId: nutrition_patients_observations_list
+      description: What a nurse notices about eating. A nurse may refer it; a nurse
+        can never approve a plan.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - nutrition
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Observation'
+          description: ''
+    post:
+      operationId: nutrition_patients_observations_create
+      description: What a nurse notices about eating. A nurse may refer it; a nurse
+        can never approve a plan.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - nutrition
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Observation'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Observation'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Observation'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Observation'
+          description: ''
+  /api/nutrition/patients/{id}/plans/:
+    get:
+      operationId: nutrition_patients_plans_list
+      description: Nutrition plans. Written and approved by a doctor or dietitian
+        only; each save is a new version.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - nutrition
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Plan'
+          description: ''
+    post:
+      operationId: nutrition_patients_plans_create
+      description: Nutrition plans. Written and approved by a doctor or dietitian
+        only; each save is a new version.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - nutrition
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Plan'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Plan'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Plan'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plan'
+          description: ''
+  /api/nutrition/patients/{id}/reports/:
+    get:
+      operationId: nutrition_patients_reports_list
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - nutrition
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Report'
+          description: ''
+  /api/nutrition/patients/{id}/reports/generate/:
+    post:
+      operationId: nutrition_patients_reports_generate_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - nutrition
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Period'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Period'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Period'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+          description: ''
+  /api/nutrition/recipes/:
+    get:
+      operationId: nutrition_recipes_list
+      tags:
+      - nutrition
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Recipe'
+          description: ''
+  /api/nutrition/recommendations/{id}/review/:
+    post:
+      operationId: nutrition_recommendations_review_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - nutrition
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Decision'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Decision'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Decision'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recommendation'
+          description: ''
+  /api/nutrition/reports/{id}/release/:
+    post:
+      operationId: nutrition_reports_release_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - nutrition
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Release'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Release'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Release'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+          description: ''
   /api/patients/:
     get:
       operationId: patients_retrieve
@@ -1652,6 +2224,9 @@ components:
       - object_id
       - object_type
       - patient_id
+    BlankEnum:
+      enum:
+      - ''
     CareAssignment:
       type: object
       properties:
@@ -1718,6 +2293,56 @@ components:
       - checked_at
       - rule_findings
       - session
+    Component:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        food_item:
+          type: string
+          format: uuid
+          nullable: true
+        food_name:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          maxLength: 160
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,5}(?:\.\d{0,2})?$
+        unit:
+          type: string
+          maxLength: 20
+        estimated_grams:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,1})?$
+          readOnly: true
+          nullable: true
+        portion_verified:
+          type: boolean
+        preparation_details:
+          type: string
+          maxLength: 200
+      required:
+      - estimated_grams
+      - food_name
+      - id
+      - name
+      - quantity
+      - unit
+    ConfirmationStatusEnum:
+      enum:
+      - confirmed
+      - needs_review
+      type: string
+      description: |-
+        * `confirmed` - Confirmed
+        * `needs_review` - Needs Review
     Consent:
       type: object
       properties:
@@ -1764,6 +2389,17 @@ components:
       - patient_name
       - revoked_at
       - scopes
+    Decision:
+      type: object
+      properties:
+        approve:
+          type: boolean
+        notes:
+          type: string
+          default: ''
+          maxLength: 2000
+      required:
+      - approve
     DeviceReading:
       type: object
       properties:
@@ -1879,6 +2515,74 @@ components:
       description: |-
         * `feedback` - Feedback
         * `clarification_request` - Clarification
+    EntryMethodEnum:
+      enum:
+      - text
+      - voice
+      - photo
+      - saved_meal
+      type: string
+      description: |-
+        * `text` - Text
+        * `voice` - Voice
+        * `photo` - Photo
+        * `saved_meal` - Saved
+    Estimate:
+      type: object
+      properties:
+        energy_kcal:
+          type: number
+          format: double
+          readOnly: true
+          nullable: true
+        protein_g:
+          type: number
+          format: double
+          readOnly: true
+          nullable: true
+        sodium_mg:
+          type: number
+          format: double
+          readOnly: true
+          nullable: true
+        potassium_mg:
+          type: number
+          format: double
+          readOnly: true
+          nullable: true
+        phosphorus_mg:
+          type: number
+          format: double
+          readOnly: true
+          nullable: true
+        calcium_mg:
+          type: number
+          format: double
+          readOnly: true
+          nullable: true
+        fluid_ml:
+          type: number
+          format: double
+          readOnly: true
+          nullable: true
+        data_completeness:
+          readOnly: true
+        estimation_method:
+          type: string
+          readOnly: true
+        source_references:
+          readOnly: true
+      required:
+      - calcium_mg
+      - data_completeness
+      - energy_kcal
+      - estimation_method
+      - fluid_ml
+      - phosphorus_mg
+      - potassium_mg
+      - protein_g
+      - sodium_mg
+      - source_references
     EventTypeEnum:
       enum:
       - hypotension
@@ -1899,6 +2603,118 @@ components:
         * `symptom` - Symptom
         * `incident` - Incident
         * `other` - Other
+    Food:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        canonical_name:
+          type: string
+          readOnly: true
+        localized_names:
+          readOnly: true
+        nutrients_per_100g:
+          readOnly: true
+        portion_grams:
+          readOnly: true
+        allergens:
+          readOnly: true
+        nutrient_data_source:
+          type: string
+          readOnly: true
+        verified:
+          type: boolean
+          readOnly: true
+      required:
+      - allergens
+      - canonical_name
+      - id
+      - localized_names
+      - nutrient_data_source
+      - nutrients_per_100g
+      - portion_grams
+      - verified
+    FoodLabReview:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        patient:
+          type: string
+          format: uuid
+          readOnly: true
+        date_from:
+          type: string
+          format: date
+          readOnly: true
+        date_to:
+          type: string
+          format: date
+          readOnly: true
+        meal_data_completeness:
+          type: number
+          format: double
+          readOnly: true
+        lab_result_references:
+          readOnly: true
+        nutrient_trends:
+          readOnly: true
+        possible_associations:
+          readOnly: true
+        limitations:
+          readOnly: true
+        questions:
+          readOnly: true
+        ai_error:
+          readOnly: true
+        model_name:
+          type: string
+          readOnly: true
+        review_status:
+          allOf:
+          - $ref: '#/components/schemas/ReviewStatusEnum'
+          readOnly: true
+        reviewed_by_name:
+          type: string
+          readOnly: true
+        review_notes:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - ai_error
+      - created_at
+      - date_from
+      - date_to
+      - id
+      - lab_result_references
+      - limitations
+      - meal_data_completeness
+      - model_name
+      - nutrient_trends
+      - patient
+      - possible_associations
+      - questions
+      - review_notes
+      - review_status
+      - reviewed_by_name
+    ImageMediaTypeEnum:
+      enum:
+      - image/jpeg
+      - image/png
+      - image/webp
+      type: string
+      description: |-
+        * `image/jpeg` - image/jpeg
+        * `image/png` - image/png
+        * `image/webp` - image/webp
     LaboratoryReport:
       type: object
       properties:
@@ -2013,6 +2829,76 @@ components:
       - organization
       - role
       - username
+    Meal:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        patient:
+          type: string
+          format: uuid
+        meal_type:
+          $ref: '#/components/schemas/MealTypeEnum'
+        consumed_at:
+          type: string
+          format: date-time
+        entry_method:
+          $ref: '#/components/schemas/EntryMethodEnum'
+        description:
+          type: string
+        confirmation_status:
+          allOf:
+          - $ref: '#/components/schemas/ConfirmationStatusEnum'
+          readOnly: true
+        components:
+          type: array
+          items:
+            $ref: '#/components/schemas/Component'
+        estimate:
+          allOf:
+          - $ref: '#/components/schemas/Estimate'
+          readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+        media_used:
+          writeOnly: true
+          oneOf:
+          - $ref: '#/components/schemas/MediaUsedEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - components
+      - confirmation_status
+      - consumed_at
+      - created_at
+      - created_by_name
+      - estimate
+      - id
+      - meal_type
+    MealTypeEnum:
+      enum:
+      - breakfast
+      - lunch
+      - dinner
+      - snack
+      type: string
+      description: |-
+        * `breakfast` - Breakfast
+        * `lunch` - Lunch
+        * `dinner` - Dinner
+        * `snack` - Snack
+    MediaUsedEnum:
+      enum:
+      - photo
+      - voice
+      type: string
+      description: "* `photo` - photo\n* `voice` - voice\n* `` - "
     Notification:
       type: object
       properties:
@@ -2138,6 +3024,49 @@ components:
       - id
       - session
       - text
+    Observation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        patient:
+          type: string
+          format: uuid
+          readOnly: true
+        author_name:
+          type: string
+          readOnly: true
+        kind:
+          $ref: '#/components/schemas/ObservationKindEnum'
+        text:
+          type: string
+        referred:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - author_name
+      - created_at
+      - id
+      - kind
+      - patient
+      - text
+    ObservationKindEnum:
+      enum:
+      - eating_difficulty
+      - nausea
+      - loss_of_appetite
+      - other
+      type: string
+      description: |-
+        * `eating_difficulty` - Eating Difficulty
+        * `nausea` - Nausea
+        * `loss_of_appetite` - Loss Of Appetite
+        * `other` - Other
     PaginatedAIReviewList:
       type: object
       required:
@@ -2460,6 +3389,61 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/VitalSign'
+    PatchedMeal:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        patient:
+          type: string
+          format: uuid
+        meal_type:
+          $ref: '#/components/schemas/MealTypeEnum'
+        consumed_at:
+          type: string
+          format: date-time
+        entry_method:
+          $ref: '#/components/schemas/EntryMethodEnum'
+        description:
+          type: string
+        confirmation_status:
+          allOf:
+          - $ref: '#/components/schemas/ConfirmationStatusEnum'
+          readOnly: true
+        components:
+          type: array
+          items:
+            $ref: '#/components/schemas/Component'
+        estimate:
+          allOf:
+          - $ref: '#/components/schemas/Estimate'
+          readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+        media_used:
+          writeOnly: true
+          oneOf:
+          - $ref: '#/components/schemas/MediaUsedEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    Period:
+      type: object
+      properties:
+        patient:
+          type: string
+          format: uuid
+        date_from:
+          type: string
+          format: date
+        date_to:
+          type: string
+          format: date
     PhaseEnum:
       enum:
       - pre
@@ -2472,6 +3456,54 @@ components:
         * `intra` - Intra
         * `post` - Post
         * `home` - Home
+    Plan:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        patient:
+          type: string
+          format: uuid
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+        dialysis_modality:
+          type: string
+          maxLength: 40
+        prescribed_targets: {}
+        guidance:
+          type: string
+        dietary_preferences: {}
+        allergies: {}
+        relevant_clinical_context:
+          type: string
+        approved_by_name:
+          type: string
+          readOnly: true
+        approved_at:
+          type: string
+          format: date-time
+          readOnly: true
+        valid_from:
+          type: string
+          format: date
+        valid_until:
+          type: string
+          format: date
+          nullable: true
+        active:
+          type: boolean
+          readOnly: true
+      required:
+      - active
+      - approved_at
+      - approved_by_name
+      - id
+      - patient
+      - version
     Prescription:
       type: object
       properties:
@@ -2528,6 +3560,220 @@ components:
       - patient
       - prescribed_by
       - version
+    Recipe:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        localized_names:
+          readOnly: true
+        meal_type:
+          allOf:
+          - $ref: '#/components/schemas/MealTypeEnum'
+          readOnly: true
+        ingredients:
+          readOnly: true
+        preparation_method:
+          readOnly: true
+        servings:
+          type: integer
+          readOnly: true
+        yield_weight:
+          type: integer
+          readOnly: true
+          nullable: true
+        allergens:
+          readOnly: true
+        nutritional_estimate:
+          readOnly: true
+        source:
+          type: string
+          readOnly: true
+      required:
+      - allergens
+      - id
+      - ingredients
+      - localized_names
+      - meal_type
+      - name
+      - nutritional_estimate
+      - preparation_method
+      - servings
+      - source
+      - yield_weight
+    Recognize:
+      type: object
+      properties:
+        patient:
+          type: string
+          format: uuid
+        description:
+          type: string
+          default: ''
+          maxLength: 2000
+        image_base64:
+          type: string
+          maxLength: 1900000
+        image_media_type:
+          allOf:
+          - $ref: '#/components/schemas/ImageMediaTypeEnum'
+          default: image/jpeg
+    Recommendation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        patient:
+          type: string
+          format: uuid
+          readOnly: true
+        nutrition_plan:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        recipe:
+          allOf:
+          - $ref: '#/components/schemas/Recipe'
+          readOnly: true
+        category:
+          type: string
+          readOnly: true
+        personalized:
+          type: boolean
+          readOnly: true
+        reasoning_summary:
+          type: string
+          readOnly: true
+        nutrient_estimates:
+          readOnly: true
+        limitations:
+          readOnly: true
+        source_references:
+          readOnly: true
+        review_status:
+          allOf:
+          - $ref: '#/components/schemas/ReviewStatusEnum'
+          readOnly: true
+        reviewed_by_name:
+          type: string
+          readOnly: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - category
+      - created_at
+      - id
+      - limitations
+      - nutrient_estimates
+      - nutrition_plan
+      - patient
+      - personalized
+      - reasoning_summary
+      - recipe
+      - review_status
+      - reviewed_at
+      - reviewed_by_name
+      - source_references
+    Release:
+      type: object
+      properties:
+        clinician_review:
+          type: string
+          default: ''
+          maxLength: 4000
+    Report:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        patient:
+          type: string
+          format: uuid
+          readOnly: true
+        patient_name:
+          type: string
+          readOnly: true
+        period_start:
+          type: string
+          format: date
+          readOnly: true
+        period_end:
+          type: string
+          format: date
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+        meal_summary:
+          readOnly: true
+        nutrient_summary:
+          readOnly: true
+        laboratory_summary:
+          readOnly: true
+        dialysis_summary:
+          readOnly: true
+        ai_draft:
+          readOnly: true
+          nullable: true
+        ai_error:
+          readOnly: true
+        model_name:
+          type: string
+          readOnly: true
+        clinician_review:
+          type: string
+          readOnly: true
+        reviewed_by_name:
+          type: string
+          readOnly: true
+        release_status:
+          type: string
+          readOnly: true
+        released_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - ai_draft
+      - ai_error
+      - clinician_review
+      - created_at
+      - dialysis_summary
+      - id
+      - laboratory_summary
+      - meal_summary
+      - model_name
+      - nutrient_summary
+      - patient
+      - patient_name
+      - period_end
+      - period_start
+      - release_status
+      - released_at
+      - reviewed_by_name
+      - version
     ResolveEvent:
       type: object
       properties:
@@ -2535,6 +3781,18 @@ components:
           type: string
       required:
       - resolution
+    ReviewStatusEnum:
+      enum:
+      - pending
+      - approved
+      - rejected
+      - ai_unavailable
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `approved` - Approved
+        * `rejected` - Rejected
+        * `ai_unavailable` - Ai Unavailable
     ReviewTask:
       type: object
       properties:
@@ -2607,6 +3865,7 @@ components:
       - nurse
       - patient
       - family
+      - dietitian
       - org_admin
       - sys_admin
       - auditor
@@ -2617,6 +3876,7 @@ components:
         * `nurse` - Nurse
         * `patient` - Patient
         * `family` - Family
+        * `dietitian` - Dietitian
         * `org_admin` - Org Admin
         * `sys_admin` - Sys Admin
         * `auditor` - Auditor
@@ -2626,11 +3886,15 @@ components:
       - summaries
       - appointments
       - labs
+      - nutrition
+      - nutrition_log
       type: string
       description: |-
         * `summaries` - Summaries
         * `appointments` - Appointments
         * `labs` - Labs
+        * `nutrition` - Nutrition
+        * `nutrition_log` - Nutrition Log
     Session:
       type: object
       properties:

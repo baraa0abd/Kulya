@@ -30,11 +30,16 @@ logger = logging.getLogger("kulya.ai")
 REVIEW_PROMPT, SUMMARY_PROMPT = "review_v1", "summary_v1"
 
 
-def _call_model(prompt_id: str, payload: dict) -> tuple[dict | None, list[dict], str]:
+def _call_model(
+    prompt_id: str, payload: dict, image: tuple[str, str] | None = None
+) -> tuple[dict | None, list[dict], str]:
     """Returns (output, errors, model_name). Never raises: every failure becomes a recorded error."""
     try:
         provider = get_provider()
-        return provider.complete_json(prompt_id, payload), [], provider.model_name
+        output = (
+            provider.complete_json(prompt_id, payload, image) if image else provider.complete_json(prompt_id, payload)
+        )
+        return output, [], provider.model_name
     except ProviderError as exc:
         return None, [{"code": "provider_error", "path": "", "message": str(exc)}], ""
     except Exception as exc:  # noqa: BLE001 - timeouts, config errors, anything else

@@ -43,6 +43,8 @@ class ConsentScope(models.TextChoices):
     SUMMARIES = "summaries"
     APPOINTMENTS = "appointments"
     LABS = "labs"
+    NUTRITION = "nutrition"  # read the food diary, plan and released nutrition reports
+    NUTRITION_LOG = "nutrition_log"  # record meals on the patient's behalf
 
 
 class CaregiverConsent(UUIDModel):

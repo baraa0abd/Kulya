@@ -11,7 +11,18 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from core.models import Role
-from core.permissions import DOCTOR, EVERYONE, FAMILY, NURSE, PATIENT, STAFF, get_patient_or_404, patients_for
+from core.permissions import (
+    ALL_ROLES,
+    CARE_TEAM,
+    DOCTOR,
+    EVERYONE,
+    FAMILY,
+    NURSE,
+    PATIENT,
+    STAFF,
+    get_patient_or_404,
+    patients_for,
+)
 from core.services import audit, idempotent
 
 from . import services
@@ -82,12 +93,12 @@ class ScopedViewSet(viewsets.GenericViewSet):
 
 
 class PatientViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, ScopedViewSet):
-    read_roles = EVERYONE
+    read_roles = ALL_ROLES
     queryset = Patient.objects.all()
     patient_field = "pk"
 
     def get_serializer_class(self):
-        return PatientSerializer if self.request.user.role in STAFF else PatientBriefSerializer
+        return PatientSerializer if self.request.user.role in CARE_TEAM else PatientBriefSerializer
 
     def retrieve(self, request: Request, *args, **kwargs) -> Response:
         patient = self.get_object()
@@ -114,7 +125,7 @@ class CareAssignmentViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, Scop
     def perform_create(self, serializer) -> None:
         user, data = self.request.user, serializer.validated_data
         same_org = {data["patient"].organization_id, data["professional"].organization_id} == {user.organization_id}
-        if not same_org or data["professional"].role not in STAFF:
+        if not same_org or data["professional"].role not in CARE_TEAM:
             raise ValidationError({"professional": "Patient and professional must be staff of your organization."})
         audit(user, "care_assignment_created", serializer.save(), patient=data["patient"])
 
@@ -348,7 +359,7 @@ class VitalSignViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, ScopedVie
 
 
 class LabReportViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, ScopedViewSet):
-    read_roles = EVERYONE
+    read_roles = ALL_ROLES
     write_roles = STAFF
     action_roles = {"release": (DOCTOR,)}
     serializer_class = LaboratoryReportSerializer
@@ -360,7 +371,7 @@ class LabReportViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.
     def get_queryset(self) -> QuerySet:
         reports = super().get_queryset()
         # Patients and caregivers only ever see reports a doctor has released.
-        return reports if self.request.user.role in STAFF else reports.filter(released_to_patient=True)
+        return reports if self.request.user.role in CARE_TEAM else reports.filter(released_to_patient=True)
 
     def create(self, request: Request, *args, **kwargs) -> Response:
         serializer = self.get_serializer(data=request.data)

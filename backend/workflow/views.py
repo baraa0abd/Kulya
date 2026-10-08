@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from ai.services import mark_reviewed
 from clinical.views import ScopedViewSet
 from core.models import Role
-from core.permissions import DOCTOR, EVERYONE, NURSE, STAFF, assigned_professionals
+from core.permissions import ALL_ROLES, DOCTOR, NURSE, STAFF, assigned_professionals
 from core.services import audit
 
 from .models import DoctorFeedback, Notification, ReviewTask
@@ -114,8 +114,8 @@ class NotificationSerializer(serializers.ModelSerializer):
 class NotificationViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     """A user's own inbox. There is no way to address another user's notifications."""
 
-    read_roles = EVERYONE
-    action_roles = {"read": EVERYONE, "read_all": EVERYONE}
+    read_roles = ALL_ROLES
+    action_roles = {"read": ALL_ROLES, "read_all": ALL_ROLES}
     serializer_class = NotificationSerializer
 
     def get_queryset(self) -> QuerySet:

@@ -34,6 +34,7 @@ from clinical.models import (
     VitalSign,
 )
 from core.models import Organization, Role, User
+from nutrition.seed import seed_nutrition
 
 ORG, OTHER_ORG = "Demo Dialysis Center (synthetic)", "Other Clinic (synthetic)"
 POLICY = Path(settings.BASE_DIR) / "ai" / "protocols" / "documentation_policy.md"
@@ -65,13 +66,15 @@ class Command(BaseCommand):
                 user.set_password(password)
                 user.save()
             self.stdout.write("Demo data already present; passwords refreshed.")
-            return
         # Seeding always uses the offline provider: it must not spend API credit or need a network.
         with override_settings(LLM_PROVIDER="mock"):
-            self.seed(password)
+            if not Organization.objects.filter(name=ORG).exists():
+                self.seed(password)
+            if seed_nutrition(password, ORG):  # also upgrades a database seeded before nutrition existed
+                self.stdout.write("Nutrition demo data added (dietitian1, food catalogue, diary, plan).")
         self.stdout.write(
             self.style.SUCCESS(
-                f"Seeded {Patient.objects.count()} patients, {DialysisSession.objects.count()} sessions, "
+                f"Demo database: {Patient.objects.count()} patients, {DialysisSession.objects.count()} sessions, "
                 f"{User.objects.count()} accounts."
             )
         )
