@@ -1,0 +1,12 @@
+# Secret scanning for CI (gitleaks). The default rules stay on.
+[extend]
+useDefault = true
+
+# The only allowance: the throwaway password that the offline test suite gives to users it
+# creates in a temporary test database. It protects nothing and exists only in backend/tests.
+[[allowlists]]
+description = "pytest fixture password for temporary test users"
+regexTarget = "secret"
+regexes = ['''^pw-for-tests-12345$''']
+paths = ['''^backend/tests/''']
+condition = "AND"
