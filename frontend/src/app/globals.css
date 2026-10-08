@@ -7,9 +7,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  /* Inter for Latin text, Noto Sans Arabic for Arabic: the browser picks per character. */
+  --font-sans: var(--font-inter), var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, monospace;
+  --font-heading: var(--font-inter), var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -126,5 +127,153 @@
   }
   html {
     @apply font-sans;
+  }
+}
+/* ---------------------------------------------------------------------------------------------
+   Kulya clinical design system (from the "Dialysis Clinical Intelligence" design spec).
+   Petrol-blue primary, jade for stable/connected states, periwinkle reserved for AI content,
+   crisp 1px borders instead of heavy shadows, 4px controls and 8px cards.
+   --------------------------------------------------------------------------------------------- */
+@theme inline {
+  --color-canvas: #f7fafc;
+  --color-chrome: #f0f5f8;
+  --color-line: #dce5eb;
+  --color-ink: #172b3a;
+  --color-ink-2: #536775;
+  --color-ink-3: #667b89;
+  --color-brand: #176b87;
+  --color-brand-strong: #00526a;
+  --color-brand-hover: #12556b;
+  --color-brand-soft: #e7f3f7;
+  --color-jade: #278b84;
+  --color-jade-soft: #ddf6f3;
+  --color-ai: #5b7fc7;
+  --color-ai-ink: #286dad;
+  --color-ai-soft: #e9f3fc;
+  --color-ok: #237c61;
+  --color-ok-soft: #e5f5ed;
+  --color-warn: #9a6500;
+  --color-warn-soft: #fff4d8;
+  --color-bad: #b43d45;
+  --color-bad-soft: #fcebed;
+}
+
+:root {
+  --background: #f7fafc;
+  --foreground: #172b3a;
+  --card: #ffffff;
+  --card-foreground: #172b3a;
+  --popover: #ffffff;
+  --popover-foreground: #172b3a;
+  --primary: #176b87;
+  --primary-foreground: #ffffff;
+  --secondary: #f0f5f8;
+  --secondary-foreground: #172b3a;
+  --muted: #f0f5f8;
+  --muted-foreground: #536775;
+  --accent: #e7f3f7;
+  --accent-foreground: #172b3a;
+  --destructive: #b43d45;
+  --border: #dce5eb;
+  --input: #dce5eb;
+  --ring: #176b87;
+  --radius: 0.5rem;
+}
+
+@layer base {
+  body {
+    font-variant-numeric: tabular-nums; /* clinical values line up and never jitter */
+  }
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.015em;
+  }
+  /* Anchored sections must clear the sticky top bar. */
+  [id] {
+    scroll-margin-top: 6rem;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Micro label: small, semi-bold, tracked capitals. Arabic has no capitals and must not be
+     letter-spaced (it breaks the joined script), so tracking applies to Latin text only. */
+  .micro {
+    font-size: 0.6875rem;
+    line-height: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+  :lang(ar) .micro {
+    letter-spacing: 0;
+    font-size: 0.75rem;
+  }
+
+  /* Cards: white surface, crisp border, barely-there elevation. */
+  [data-slot="card"] {
+    border: 1px solid var(--color-line);
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px 0 rgb(23 43 58 / 0.04) !important; /* replaces the kit's ring: one crisp border */
+  }
+
+  /* Data tables: fixed tinted header, 44px touch rows. */
+  [data-slot="table-head"] {
+    height: 2.25rem;
+    background: var(--color-chrome);
+    color: var(--color-ink-2);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    white-space: nowrap;
+  }
+  :lang(ar) [data-slot="table-head"] {
+    letter-spacing: 0;
+    font-size: 0.75rem;
+  }
+  [data-slot="table-cell"] {
+    height: 2.75rem;
+  }
+  [data-slot="table-row"]:hover {
+    background: var(--color-brand-soft);
+  }
+
+  /* Form controls: 36px, 4px radius, petrol focus ring. */
+  [data-slot="input"],
+  [data-slot="textarea"],
+  .control {
+    border: 1px solid var(--color-line);
+    border-radius: 0.25rem;
+    background: #ffffff;
+    font-size: 0.875rem;
+    color: var(--color-ink);
+  }
+  [data-slot="input"],
+  select.control {
+    height: 2.25rem;
+  }
+  [data-slot="input"]:focus-visible,
+  [data-slot="textarea"]:focus-visible,
+  .control:focus-visible {
+    outline: none;
+    border-color: var(--color-brand);
+    box-shadow: 0 0 0 3px rgb(23 107 135 / 0.15);
+  }
+  [data-slot="label"] {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-ink-2);
+  }
+  [data-slot="button"] {
+    border-radius: 0.25rem;
+    font-weight: 600;
+  }
+  [data-slot="button"][data-variant="default"]:hover {
+    background: var(--color-brand-hover);
   }
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { Activity } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 
@@ -15,11 +16,14 @@ export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+    <main className="flex min-h-screen items-center justify-center bg-canvas p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>
-            <h1 className="text-2xl text-teal-800"><Tx k="Kulya" /></h1>
+            <span className="mb-3 flex size-11 items-center justify-center rounded-lg bg-brand text-white">
+              <Activity className="size-6" aria-hidden />
+            </span>
+            <h1 className="text-2xl font-semibold text-brand-strong"><Tx k="Kulya" /></h1>
           </CardTitle>
           <CardDescription>
             <Tx k="Sign in. This demonstration runs on synthetic data only and is not a medical device." />

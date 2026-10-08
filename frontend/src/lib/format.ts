@@ -14,9 +14,15 @@ export const label = (code: string) => {
   return tr(text.charAt(0).toUpperCase() + text.slice(1));
 };
 
-/** A value is always shown with its unit; a missing value is shown as missing, never as zero. */
-export const withUnit = (value: string | number | null | undefined, unit: string) =>
-  value === null || value === undefined || value === "" ? tr("Not recorded") : `${Number(value)} ${unit}`;
+/**
+ * A value is always shown with its unit; a missing value is shown as missing, never as zero.
+ * In Arabic the pair is wrapped in left-to-right isolates so it reads "240 min", not "min 240".
+ */
+export const withUnit = (value: string | number | null | undefined, unit: string) => {
+  if (value === null || value === undefined || value === "") return tr("Not recorded");
+  const text = `${Number(value)} ${unit}`;
+  return getLocale() === "ar" ? `⁦${text}⁩` : text;
+};
 
 export const minutesBetween = (start: string | null, end: string | null): number | null =>
   start && end ? Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000) : null;

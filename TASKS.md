@@ -28,6 +28,7 @@ Statuses: TODO, IN_PROGRESS, BLOCKED, TESTING, DONE. A task is DONE only with ex
 | T21 | CI workflow (lint, tests, build, compose build, secret scan) | P1 | T20 | TESTING | file written | **Never executed** (no remote) |
 | T22 | Documentation: README, architecture, security, deployment, test report, OpenAPI | P1 | all | DONE | files present; `docs/openapi.yaml` generated | — |
 | T30 | Arabic right-to-left interface with English toggle | P1 | T15–T17 | DONE | Arabic E2E test, i18n unit test, build | Server-generated text stays English; wording not reviewed by a clinician; only two screens checked visually in RTL |
+| T31 | Apply the Dialysis Clinical Intelligence design system (frontend only) | P1 | T15–T17, T30 | DONE | 10 unit + 7 E2E tests re-run; screenshots of 4 screens reviewed | Nurse session, doctor patient, family and sign-in screens and small-screen layouts not visually reviewed; mock-up elements with no backing data (telemetry, chairs, hotline) intentionally omitted |
 | T23 | Real Claude API evaluation of both AI features | P0 | T12, T13 | BLOCKED | — | Needs `ANTHROPIC_API_KEY`; none available in this environment |
 | T24 | Semantic embedding model for retrieval | P1 | T10 | BLOCKED | — | Needs an embedding provider and key |
 | T25 | Clinician-approved protocols and clinical review of rules and prompts | P0 for real use | — | BLOCKED | — | Needs clinicians; synthetic policy used meanwhile |

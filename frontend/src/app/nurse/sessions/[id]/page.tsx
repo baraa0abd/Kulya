@@ -1,15 +1,35 @@
 "use client";
 
+import { Activity, ClipboardCheck, ClipboardList, ListChecks, MessageSquare } from "lucide-react";
 import { useParams } from "next/navigation";
 import { z } from "zod";
 
-import { Load, Measurements, optionalNumber, requiredText, Section, Shell, Status, Timeline, ZForm } from "@/components/app";
+import {
+  Load,
+  Measurements,
+  type NavItem,
+  optionalNumber,
+  requiredText,
+  Section,
+  Shell,
+  Status,
+  Timeline,
+  ZForm,
+} from "@/components/app";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api, type Feedback, type Finding, type SessionDetail } from "@/lib/api";
 import { useRole } from "@/lib/auth";
 import { tr, Tx, useLocale } from "@/lib/i18n";
 import { dateTime, label } from "@/lib/format";
 import { useGet, useList } from "@/lib/hooks";
+
+const NAV: NavItem[] = [
+  { href: "#session", label: "Dialysis session", icon: Activity },
+  { href: "#document", label: "Document care", icon: ClipboardCheck },
+  { href: "#completeness", label: "Documentation completeness", icon: ListChecks },
+  { href: "#feedback", label: "Doctor feedback on this session", icon: MessageSquare },
+  { href: "#timeline", label: "Nursing action timeline", icon: ClipboardList },
+];
 
 const options = (values: string[]): [string, string][] => values.map((v) => [v, label(v)]);
 const now = () => new Date().toISOString();
@@ -64,11 +84,11 @@ export default function NurseSessionPage() {
   };
 
   return (
-    <Shell title="Dialysis session" back="/nurse/">
+    <Shell title="Dialysis session" back="/nurse/" nav={NAV}>
       <Load from={session}>
         {(s) => (
-          <>
-            <Section title={`${s.patient_name} · ${tr("scheduled")} ${dateTime(s.scheduled_start)}`} action={<Status value={s.status} />}>
+          <div className="grid gap-5 xl:grid-cols-3 xl:grid-rows-[auto_auto_1fr] xl:items-start">
+            <Section id="session" icon={Activity} className="xl:col-span-2" title={`${s.patient_name} · ${tr("scheduled")} ${dateTime(s.scheduled_start)}`} action={<Status value={s.status} />}>
               {s.status === "scheduled" && (
                 <ZForm
                   schema={startSchema}
@@ -82,7 +102,7 @@ export default function NurseSessionPage() {
               )}
               {s.status !== "scheduled" && <Measurements session={s} />}
               {s.status === "in_progress" && (
-                <div className="mt-4 border-t pt-4">
+                <div className="mt-4 border-t border-line pt-4">
                   <h3 className="mb-2 text-sm font-medium"><Tx k="Complete the session" /></h3>
                   <ZForm
                     schema={completeSchema}
@@ -102,6 +122,9 @@ export default function NurseSessionPage() {
 
             {s.status !== "scheduled" && (
               <Section
+                id="document"
+                icon={ClipboardCheck}
+                className="xl:col-span-2"
                 title="Document care"
                 description="Signed entries cannot be edited. To correct one, add a new entry that explains the correction."
               >
@@ -181,17 +204,19 @@ export default function NurseSessionPage() {
               </Section>
             )}
 
-            <div className="grid gap-4 lg:grid-cols-2">
+            <div className="space-y-5 xl:col-start-3 xl:row-span-3 xl:row-start-1">
               <Section
+                id="completeness"
+                icon={ListChecks}
                 title="Documentation completeness"
                 description="Automated checks on what is recorded. They do not judge clinical decisions."
               >
                 <Load from={checks}>
                   {(result) =>
                     result.checked_at === null ? (
-                      <p className="text-sm text-slate-500"><Tx k="Checks run after the first nursing action is recorded." /></p>
+                      <p className="text-sm text-ink-3"><Tx k="Checks run after the first nursing action is recorded." /></p>
                     ) : result.rule_findings.length === 0 ? (
-                      <p className="text-sm text-teal-800">{tr("No documentation gaps found")} ({dateTime(result.checked_at)}).</p>
+                      <p className="text-sm font-medium text-ok">{tr("No documentation gaps found")} ({dateTime(result.checked_at)}).</p>
                     ) : (
                       <ul className="list-disc space-y-1 ps-5 text-sm" data-testid="completeness">
                         {result.rule_findings.map((f) => (
@@ -204,10 +229,10 @@ export default function NurseSessionPage() {
                   }
                 </Load>
               </Section>
-              <Section title="Doctor feedback on this session">
+              <Section id="feedback" icon={MessageSquare} title="Doctor feedback on this session">
                 <Load from={feedback} empty="No feedback on this session.">
                   {(rows) => (
-                    <ul className="divide-y text-sm">
+                    <ul className="divide-y divide-line text-sm">
                       {rows.map((f) => (
                         <li key={f.id} className="py-2">
                           <span className="font-medium">{label(f.kind)}</span> · {f.author_name} · {dateTime(f.created_at)}
@@ -220,7 +245,7 @@ export default function NurseSessionPage() {
               </Section>
             </div>
 
-            <Section title="Nursing action timeline">
+            <Section id="timeline" icon={ClipboardList} className="xl:col-span-2" title="Nursing action timeline">
               <Timeline
                 session={s}
                 renderEvent={(event) =>
@@ -240,7 +265,7 @@ export default function NurseSessionPage() {
                 }
               />
             </Section>
-          </>
+          </div>
         )}
       </Load>
     </Shell>

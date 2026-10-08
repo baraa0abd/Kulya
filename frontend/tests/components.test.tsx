@@ -130,7 +130,8 @@ describe("Arabic interface", () => {
       expect(tr("Sign in")).toBe("تسجيل الدخول");
       expect(label("action_without_reason")).toBe("إجراء بلا سبب");
       expect(withUnit(null, "kg")).toBe("غير مسجَّل");
-      expect(withUnit("64.0", "kg")).toBe("64 kg"); // values and units are never translated
+      // Values and units are never translated; they are isolated left-to-right so they do not flip.
+      expect(withUnit("64.0", "kg")).toBe("⁦64 kg⁩");
       expect(tr("Some server text with no entry")).toBe("Some server text with no entry");
       render(<Status value="pending_review" />);
       expect(screen.getByText("بانتظار المراجعة")).toBeInTheDocument();
