@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Activity,
   Bell,
@@ -53,12 +53,14 @@ const ROLE_NAME: Record<string, string> = {
   nurse: "Nurse",
   patient: "Patient",
   family: "Family caregiver",
+  dietitian: "Renal dietitian",
 };
 const ROLE_AREA: Record<string, string> = {
   doctor: "Physician workspace",
   nurse: "Nursing workspace",
   patient: "Patient companion",
   family: "Family access",
+  dietitian: "Nutrition workspace",
 };
 
 export interface NavItem {
@@ -89,6 +91,7 @@ export function Shell({
 }) {
   const { user, logout } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   useLocale();
   const hash = useSyncExternalStore(
     subscribeHash,
@@ -97,7 +100,8 @@ export function Shell({
   );
   const unread = useList<Notification>(user ? "/notifications/?unread=true" : null);
   const unreadCount = unread.data?.length ?? 0;
-  const current = nav.some((item) => item.href === hash) ? hash : nav[0]?.href;
+  // A nav item is either a section of this page (#hash) or another page of the same area (path).
+  const current = (nav.find((item) => item.href === hash) ?? nav.find((item) => item.href === pathname) ?? nav[0])?.href;
   const name = user ? user.display_name || user.username : "";
   const role = user ? tr(ROLE_NAME[user.role] ?? user.role) : "";
   const home = user ? HOME[user.role] : "/";
@@ -384,6 +388,15 @@ const STATUS_STYLE: Record<string, string> = {
   verified: OK,
   reviewed: OK,
   released: OK,
+  confirmed: OK,
+  approved: OK,
+  compatible: OK,
+  needs_review: WARN,
+  pending: WARN,
+  check_portion: WARN,
+  needs_dietitian_review: WARN,
+  draft: NEUTRAL,
+  general: NEUTRAL,
 };
 
 export function Status({ value }: { value: string }) {

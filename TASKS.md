@@ -37,6 +37,29 @@ Statuses: TODO, IN_PROGRESS, BLOCKED, TESTING, DONE. A task is DONE only with ex
 | T28 | Rate-limit test, mypy, Python dependency audit, accessibility and mobile review | P2 | — | TODO | — | Not done |
 | T29 | HttpOnly cookie sessions, MFA, password reset | P1 for real use | T04 | TODO | — | Not done |
 
+## Renal Nutrition Copilot (added 2026-10-08)
+
+Target: functional, tested hackathon MVP. Not clinically approved software.
+
+| ID | Description | Pri | Depends | Status | Tests executed / evidence | Known limitations |
+|---|---|---|---|---|---|---|
+| N01 | `nutrition` app and models: FoodItem, Recipe, MealLog, MealComponent, MealMedia, NutrientEstimate, NutritionPlan, MealRecommendation, FoodLabReview, NutritionReport, NutritionObservation | P0 | T03 | DONE | migrations apply; `test_nutrition.py` | — |
+| N02 | Role `dietitian` (care-assignment scoped) and consent scopes `nutrition`, `nutrition_log` | P0 | T04, T05 | DONE | scope, tenant, consent and expiry tests | No screen to assign a dietitian (org-admin API only) |
+| N03 | Deterministic nutrient engine: unknown stays unknown, missing days are not zero | P0 | N01 | DONE | 4 engine tests | Per-meal limits only; no daily targets |
+| N04 | Food catalogue: 27 foods and 9 recipes incl. Iraqi/Kurdish dishes, Arabic and Kurdish names | P0 | N01 | DONE | loaded by seed and tests | **Values are approximate and unverified**; written by the developer, not from a laboratory or official table |
+| N05 | USDA FoodData Central lookup with cache, off without a key | P1 | N04 | TESTING | tested against a fake response only | **Never called the real USDA API** (no key) |
+| N06 | Meal recognition from text, speech transcript or photo; user confirms every line; nothing saved before | P0 | N03 | DONE | recognition, failure and injection tests; E2E | Photo path never run with a real model; mock cannot read photos |
+| N07 | Voice entry | P1 | N06 | DONE (browser only) | manual: button appears in Chromium | Uses the browser speech service; server `/ai/transcribe/` returns 501 by design; not tested with real speech |
+| N08 | Food-and-lab review: descriptive, no causal wording, clinician review | P0 | N03 | DONE | validation tests (causal, creatinine, medication, invented numbers, unknown ids), idempotency | Wording filter is a blunt keyword list |
+| N09 | Meal suggestions: rule-based against the approved plan; general without one; clinician approval | P0 | N03 | DONE | plan, allergen, approval and visibility tests; E2E | 9 recipes; no patient preference learning |
+| N10 | Periodic report: computed facts + separate AI narrative; review and release; print to PDF | P0 | N03 | DONE | draft/release/visibility tests; E2E | PDF is the browser print dialog; no server-side PDF |
+| N11 | Nurse observations and referral | P1 | N02 | DONE | observation test; E2E | — |
+| N12 | API under `/api/nutrition/` (17 paths), OpenAPI regenerated | P0 | N01–N11 | DONE | `docs/openapi.yaml` | — |
+| N13 | Screens: patient/family (6 routes), care team (3 routes), dietitian dashboard; Arabic RTL | P0 | N12 | DONE | 7 Playwright tests; screenshots reviewed for 3 screens | Editing a saved meal has no screen (remove and re-add; PATCH exists in the API) |
+| N14 | Accessible assistant (P1 in the spec) | P1 | — | TODO | — | **Not built** |
+| N15 | Real-model evaluation of the 4 nutrition prompts | P0 for real use | N06–N10 | BLOCKED | — | Needs `ANTHROPIC_API_KEY` |
+| N16 | Dietitian review of catalogue values, rules, prompts and wording | P0 for real use | — | BLOCKED | — | Needs a renal dietitian |
+
 ## Requirement status against the definition of done
 
 | Requirement | Status |

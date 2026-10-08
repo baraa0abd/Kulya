@@ -10,6 +10,7 @@ export const HOME: Record<Role, string> = {
   nurse: "/nurse/",
   patient: "/patient/",
   family: "/patient/",
+  dietitian: "/dietitian/",
   org_admin: "/login/",
   auditor: "/login/",
   sys_admin: "/login/",

@@ -214,8 +214,9 @@ def mock_response(prompt_id: str, payload: dict, image: tuple[str, str] | None =
                 latest = labs[-1]
                 observations.append(
                     {
-                        "text": f"Average recorded {nutrient} on days with complete data was {known[nutrient]} "
-                        f"{UNITS[nutrient]}. The {latest['analyte']} result was {latest['value']} {latest['unit']}. "
+                        "text": f"Average recorded {nutrient.split('_')[0]} on days with complete data was "
+                        f"{known[nutrient]} {UNITS[nutrient]}. "
+                        f"The {latest['analyte']} result was {latest['value']} {latest['unit']}. "
                         "These are shown side by side; no cause is implied.",
                         "nutrient": nutrient,
                         "lab_result_ids": [lab["id"] for lab in labs],
@@ -231,7 +232,9 @@ def mock_response(prompt_id: str, payload: dict, image: tuple[str, str] | None =
     return {
         "overview": f"Meals were recorded on {diary['days_recorded']} of {diary['days_in_period']} days "
         f"in this period ({diary['meals_recorded']} meals).",
-        "observations": [f"Average recorded {n} on days with complete data: {v} {UNITS[n]}." for n, v in known.items()],
+        "observations": [
+            f"Average recorded {n.split('_')[0]} on days with complete data: {v} {UNITS[n]}." for n, v in known.items()
+        ],
         "questions_for_care_team": ["Are there days in this period when meals were eaten but not recorded?"],
         "limitations": ["Food records are self-reported and nutrient values are estimates."],
         "verification_status": "unverified",
