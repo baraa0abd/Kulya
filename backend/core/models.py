@@ -48,6 +48,7 @@ class Role(models.TextChoices):
     NURSE = "nurse"
     PATIENT = "patient"
     FAMILY = "family"
+    DIETITIAN = "dietitian"  # renal dietitian: nutrition plans and reviews for assigned patients
     ORG_ADMIN = "org_admin"
     SYS_ADMIN = "sys_admin"
     AUDITOR = "auditor"

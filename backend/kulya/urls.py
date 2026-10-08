@@ -34,6 +34,7 @@ urlpatterns = [
     path("api/auth/login/", LoginView.as_view()),
     path("api/auth/refresh/", TokenRefreshView.as_view()),
     path("api/auth/me/", MeView.as_view()),
+    path("api/nutrition/", include("nutrition.urls")),
     path("api/", include(router.urls)),
     path("api/schema/", SpectacularAPIView.as_view(permission_classes=[]), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema", permission_classes=[])),

@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardList, FlaskConical, History } from "lucide-react";
+import { ClipboardList, FlaskConical, History, Salad } from "lucide-react";
 import { useParams } from "next/navigation";
 import { z } from "zod";
 
@@ -19,7 +19,7 @@ const orderSchema = z.object({
   access_type: z.enum(["AVF", "AVG", "CVC"]),
 });
 
-const NAV: NavItem[] = [
+const SECTIONS: NavItem[] = [
   { href: "#history", label: "Dialysis session history", icon: History },
   { href: "#labs", label: "Laboratory trends", icon: FlaskConical },
   { href: "#orders", label: "Dialysis orders", icon: ClipboardList },
@@ -36,6 +36,7 @@ export default function DoctorPatientPage() {
   const release = useAction();
   if (!user) return null;
   const unreleased = labs.data?.filter((r) => !r.released_to_patient) ?? [];
+  const NAV = [...SECTIONS, { href: `/doctor/patients/${id}/nutrition/`, label: "Nutrition", icon: Salad }];
   return (
     <Shell title={patient.data ? `${patient.data.full_name} (${patient.data.mrn})` : "Patient"} back="/doctor/" nav={NAV}>
       <Section id="history" icon={History} title="Dialysis session history">

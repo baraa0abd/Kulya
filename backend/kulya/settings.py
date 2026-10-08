@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "clinical",
     "ai",
     "workflow",
+    "nutrition",
 ]
 
 MIDDLEWARE = [
@@ -166,6 +167,8 @@ LLM_MODEL = os.environ.get("LLM_MODEL", "claude-opus-5-5")
 LLM_EFFORT = os.environ.get("LLM_EFFORT", "low")
 LLM_TIMEOUT_SECONDS = float(os.environ.get("LLM_TIMEOUT_SECONDS", "45"))
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+# USDA FoodData Central. Empty = lookups are off and only the local catalogue is used.
+USDA_API_KEY = os.environ.get("USDA_API_KEY", "")
 EMBEDDING_DIMENSIONS = 256
 RAG_TOP_K = int(os.environ.get("RAG_TOP_K", "4"))
 RAG_MIN_SIMILARITY = float(os.environ.get("RAG_MIN_SIMILARITY", "0.12"))

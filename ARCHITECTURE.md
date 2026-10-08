@@ -18,6 +18,7 @@ decided in Django.
 | `clinical` | Patient, CareAssignment, CaregiverConsent, DialysisDevice, DialysisPrescription, DialysisSession, VitalSign, DeviceReading, LaboratoryReport/Result, NursingAction, NursingNote, SessionEvent |
 | `ai` | ClinicalProtocol, ProtocolVersion, ProtocolChunk (pgvector), AIReview, AISummary, rules, retrieval, provider adapters, validation, Celery tasks |
 | `workflow` | DoctorFeedback, ReviewTask, Notification |
+| `nutrition` | FoodItem, Recipe, MealLog, MealComponent, MealMedia, NutrientEstimate, NutritionPlan, MealRecommendation, FoodLabReview, NutritionReport, NutritionObservation, nutrient engine, USDA client |
 
 Views are thin. Anything that writes lives in a `services.py` and writes an audit event.
 
@@ -130,3 +131,42 @@ Groups under `/api/`: `auth`, `patients`, `care-assignments`, `consent`, `prescr
 `audit`, `health`. Paginated lists (50 per page), `?ordering=`, per-resource filters, one error
 shape `{"error": {"code", "message", "details"}}`, rate limits, `Idempotency-Key` on session and
 record creation. Full schema: `docs/openapi.yaml` or `/api/docs/`.
+
+## Renal nutrition (`backend/nutrition`)
+
+Same pattern as the two session features: deterministic code produces the facts, the model only
+proposes or describes, strict validation rejects anything else, and a clinician reviews before a
+patient sees AI-written text.
+
+| Step | Where | Deterministic or AI |
+|---|---|---|
+| Nutrient totals of a meal | `engine.estimate` (catalogue value per 100 g x grams) | Deterministic. Client-sent values are ignored. |
+| Diary averages, missing days | `engine.diary_summary` | Deterministic. Average over days with complete data only. |
+| Recipe versus plan | `engine.classify_recipe` | Deterministic. Limits come only from the clinician's plan. |
+| What was eaten (text, speech, photo) | `services.recognize`, prompt `nutrition_recognize_v1` | AI proposes names and portions; the person confirms each line; nothing is saved before that. |
+| Food and lab review | `services.analyze`, prompt `nutrition_analyze_v1` | AI describes side by side; draft until a doctor or dietitian approves. |
+| Suggestion wording | `services.suggest`, prompt `nutrition_suggest_v1` | AI words the rule result; pending until approved. |
+| Report narrative | `services.build_report`, prompt `nutrition_report_v1` | AI draft stored apart from the facts; released by a clinician. |
+
+Rules that hold everywhere:
+
+- An unknown nutrient is `null`, never 0. A day without a record is "not recorded", never "ate nothing".
+- The model never outputs a nutrient number, a limit or a plan. `NutritionPlan` rows are created
+  only by `approve_plan`, called by a doctor or dietitian; each save is a new version.
+- `nutrition/ai.py` rejects output with causal wording ("caused", "due to", ...), any mention of
+  creatinine, medication or supplement advice, instructions to the patient, numbers that are not
+  values in the input, and citations of results that were not provided. A rejected or failed call
+  leaves the deterministic facts in place and marks the draft `ai_unavailable`.
+- Photos are resized in the browser, sent once for recognition and not stored. `MealMedia` records
+  only that a photo or voice clip was used.
+- Idempotency: reviews and reports are keyed by a SHA-256 fingerprint of their input; suggestions
+  are created once per recipe and plan version.
+
+Roles: `dietitian` reaches patients through `CareAssignment` like other staff and has no access to
+session documentation. Doctors and dietitians approve plans, review drafts and release reports;
+nurses read the diary and record observations; patients write their own diary; a family caregiver
+needs the `nutrition` consent scope to read and `nutrition_log` to record meals.
+
+Frontend: `src/components/nutrition.tsx` holds every panel. Routes are thin: `/patient/nutrition/`
+(+ `add`, `history`, `suggestions`, `labs`, `reports`), `/doctor/patients/[id]/nutrition/`
+(+ `lab-review`, `reports`; also used by dietitians and nurses), `/dietitian/`.

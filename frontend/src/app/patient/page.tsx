@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, FileText, FlaskConical, HeartPulse, Share2, ShieldCheck } from "lucide-react";
+import { CalendarDays, FileText, FlaskConical, HeartPulse, Salad, Share2, ShieldCheck } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { z } from "zod";
 
@@ -28,7 +28,13 @@ const HOME_UNITS: Record<string, string> = { weight: "kg", systolic_bp: "mmHg", 
 const measurementSchema = z.object({ kind: z.string(), value: z.coerce.number({ message: "Enter a number." }) });
 const consentSchema = z.object({
   caregiver_username: requiredText("Caregiver username"),
-  share: z.enum(["summaries", "summaries,appointments", "summaries,appointments,labs"]),
+  share: z.enum([
+    "summaries",
+    "summaries,appointments",
+    "summaries,appointments,labs",
+    "summaries,appointments,labs,nutrition",
+    "summaries,appointments,labs,nutrition,nutrition_log",
+  ]),
 });
 
 function WeeklyHistory({ sessions }: { sessions: Session[] }) {
@@ -94,6 +100,8 @@ function FamilySharing() {
               ["summaries", "Reviewed summaries"],
               ["summaries,appointments", "Summaries and appointments"],
               ["summaries,appointments,labs", "Summaries, appointments and released lab results"],
+              ["summaries,appointments,labs,nutrition", "All of the above and my food diary"],
+              ["summaries,appointments,labs,nutrition,nutrition_log", "All of the above, and they may record meals for me"],
             ],
           },
         ]}
@@ -162,6 +170,7 @@ export default function PatientDashboard() {
     { href: "#summaries", label: "Treatment summaries", icon: FileText },
     { href: "#sessions", label: "Upcoming sessions", icon: CalendarDays },
     { href: "#labs", label: "Laboratory results", icon: FlaskConical },
+    { href: "/patient/nutrition/", label: "Nutrition", icon: Salad },
     ...(isPatient
       ? [
           { href: "#sharing", label: "Family sharing", icon: Share2 },

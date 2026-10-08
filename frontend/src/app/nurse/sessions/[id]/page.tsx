@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, ClipboardCheck, ClipboardList, ListChecks, MessageSquare } from "lucide-react";
+import { Activity, ClipboardCheck, ClipboardList, ListChecks, MessageSquare, Salad } from "lucide-react";
 import { useParams } from "next/navigation";
 import { z } from "zod";
 
@@ -84,7 +84,11 @@ export default function NurseSessionPage() {
   };
 
   return (
-    <Shell title="Dialysis session" back="/nurse/" nav={NAV}>
+    <Shell
+      title="Dialysis session"
+      back="/nurse/"
+      nav={session.data ? [...NAV, { href: `/doctor/patients/${session.data.patient}/nutrition/`, label: "Nutrition", icon: Salad }] : NAV}
+    >
       <Load from={session}>
         {(s) => (
           <div className="grid gap-5 xl:grid-cols-3 xl:grid-rows-[auto_auto_1fr] xl:items-start">

@@ -49,17 +49,32 @@ and `ANTHROPIC_API_KEY` to use Claude.
 ## Tests
 
 ```bash
-cd backend  && .venv/Scripts/python -m pytest          # 69 tests, needs the db container
-cd frontend && npm test                                # 10 unit/component tests
-cd frontend && npx playwright install chromium && npm run e2e   # 7 E2E tests, needs the stack running
+cd backend  && .venv/Scripts/python -m pytest          # 98 tests, needs the db container
+cd frontend && npm test                                # 11 unit/component tests
+cd frontend && npx playwright install chromium && npm run e2e   # 14 E2E tests, needs the stack running
 ```
 
-The E2E run changes today's session for SYN-001. Reset the demo data afterwards:
+The E2E run changes today's session, the diary and a report for SYN-001. Sign-in is limited to 10 per minute,
+so run the two spec files separately (`npx playwright test e2e/nutrition.spec.ts`) or raise `THROTTLE_LOGIN`. Reset the demo data afterwards:
 `python manage.py flush --noinput && python manage.py seed_demo`.
 
 ## Where things are
 
-- `backend/` Django + DRF API (`core`, `clinical`, `ai`, `workflow`), Celery tasks, tests
+- `backend/` Django + DRF API (`core`, `clinical`, `ai`, `workflow`, `nutrition`), Celery tasks, tests
 - `frontend/` Next.js + TypeScript + Tailwind + shadcn/ui dashboards
 - `docs/openapi.yaml` generated API schema (live at `/api/docs/` on the backend)
 - `ARCHITECTURE.md`, `SECURITY.md`, `DEPLOYMENT.md`, `TASKS.md`, `TEST_REPORT.md`
+
+## Renal nutrition
+
+Patients (or a caregiver they allow) keep a food diary by typing, speaking or photographing a
+meal; the assistant proposes foods and the person confirms each line. Nutrient estimates are
+calculated by the server from the food catalogue. A doctor or dietitian approves the nutrition
+plan, reviews AI drafts and releases reports. Demo account for the new role: `dietitian1`.
+
+- The bundled food catalogue (`backend/nutrition/data/catalog.json`) is **approximate and
+  unverified**. `python manage.py load_food_catalog` loads it; `seed_demo` does this for you.
+- Optional: set `USDA_API_KEY` to let a doctor or dietitian import foods from USDA FoodData
+  Central (`/api/nutrition/foods/?q=...&source=usda`).
+- This module is a demonstration. It is not medically validated and must not be used with real
+  patients without clinical assessment, privacy review and any required regulatory clearance.

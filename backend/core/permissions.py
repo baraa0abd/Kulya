@@ -15,8 +15,11 @@ from rest_framework.permissions import SAFE_METHODS, BasePermission
 from .models import Role, User
 
 DOCTOR, NURSE, PATIENT, FAMILY = Role.DOCTOR, Role.NURSE, Role.PATIENT, Role.FAMILY
+DIETITIAN = Role.DIETITIAN
 STAFF = (DOCTOR, NURSE)
+CARE_TEAM = (*STAFF, DIETITIAN)  # reach patients through an active care assignment
 EVERYONE = (DOCTOR, NURSE, PATIENT, FAMILY)
+ALL_ROLES = (*EVERYONE, DIETITIAN)
 
 
 class RolePolicy(BasePermission):
@@ -44,7 +47,7 @@ def patients_for(user: User, scope: str | None = None) -> QuerySet:
     from clinical.models import Patient
 
     now = timezone.now()
-    if user.role in STAFF:
+    if user.role in CARE_TEAM:
         # Same organization AND an active care-team assignment.
         active = Q(assignments__professional=user, assignments__active=True) & (
             Q(assignments__ends_at__isnull=True) | Q(assignments__ends_at__gt=now)

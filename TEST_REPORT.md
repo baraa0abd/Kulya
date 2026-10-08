@@ -7,17 +7,17 @@ Docker. All AI calls used the offline `MockProvider`. **No request was sent to t
 
 | Suite | Command | Result |
 |---|---|---|
-| Backend (pytest, PostgreSQL) | `cd backend && python -m pytest` | **69 passed**, 3 consecutive full runs |
+| Backend (pytest, PostgreSQL) | `cd backend && python -m pytest` | **98 passed** (2 consecutive full runs after the nutrition module) |
 | Backend lint / format | `ruff check .`, `ruff format --check .` | clean |
 | Migrations | `manage.py makemigrations --check` | no pending changes |
-| Frontend unit + component (Vitest, RTL) | `npm test` | **10 passed** |
+| Frontend unit + component (Vitest, RTL) | `npm test` | **11 passed** |
 | Frontend lint | `npx eslint src` | clean |
 | Frontend types | `npx tsc --noEmit` (strict) | clean |
 | Frontend production build | `npx next build` | succeeded |
-| End-to-end (Playwright, Chromium) | `npm run e2e` | **7 passed** (re-run after the Arabic interface was added) |
+| End-to-end (Playwright, Chromium) | `npm run e2e` | `nutrition.spec.ts` **7 passed**. `workflow.spec.ts` **7 passed** (re-run after the nutrition work). Run the two files separately: together they exceed the 10/min sign-in limit |
 | Docker Compose | `docker compose up --build -d` | 5 services up; see below |
 
-Backend breakdown: `test_security.py` 38, `test_ai.py` 23, `test_workflow.py` 8.
+Backend breakdown: `test_security.py` 38, `test_ai.py` 23, `test_workflow.py` 8, `test_nutrition.py` 29.
 
 ## What the tests cover
 
@@ -76,6 +76,28 @@ patient page, the family view, the sign-in page after restyling, and any phone o
 - A hydration mismatch when the saved language was English (the pages sat inside a Suspense
   boundary and hydrated after the language switch).
 - In Arabic, values with units rendered reversed ("min 240") and charts were mirrored.
+
+## Nutrition module (2026-10-08)
+
+`test_nutrition.py` (29): nutrient arithmetic and null handling; missing diary days; recipe
+classification; Arabic and plural food matching; server-side estimates; correction and withdrawal;
+recognition proposes without saving; provider failure and smuggled nutrient fields fall back to
+manual entry; care-team, tenant and patient isolation; family consent scopes, revocation and
+expiry; plan approval rights and versioning; general versus personalized suggestions and their
+visibility; rejection of causal claims, creatinine statements, medication advice, invented numbers
+and unknown citations; food-and-lab review idempotency; report draft, release and what a patient
+sees inside it; nurse referral notifications; USDA client against a fake response.
+
+`e2e/nutrition.spec.ts` (7, Chromium, mock provider): patient records a meal after confirming each
+line; patient sees only approved ideas and no draft; dietitian approves an idea and releases the
+report; patient then sees it; nurse cannot approve; family access follows consent (granted and
+expired); Arabic RTL. Screenshots of the Arabic overview, the add-meal screen and the clinician
+page were looked at by the developer.
+
+Not tested in the nutrition module: any real model (text or photo); real speech input; the real
+USDA API; printing to PDF; mobile layouts; the lab-review and report screens in Arabic; behaviour
+with a Celery worker (tests and the local run execute tasks inline; the endpoints return 202 when
+a worker is used and the screen then needs a reload).
 
 ## Not tested
 

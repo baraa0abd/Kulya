@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
+import { NutrientTray } from "@/components/nutrition";
 import { AiLabel, Load, Measurements, optionalNumber, requiredText, Status, Timeline, ZForm } from "@/components/app";
 import { ApiError, describeError, type SessionDetail } from "@/lib/api";
 import { label, minutesBetween, weekOf, withUnit } from "@/lib/format";
@@ -139,5 +140,15 @@ describe("Arabic interface", () => {
       setLocale("en", false);
     }
     expect(document.documentElement.dir).toBe("ltr");
+  });
+});
+
+describe("nutrition", () => {
+  it("shows an unknown nutrient as not available, never as zero", () => {
+    const values = { energy_kcal: 130, protein_g: 0, sodium_mg: null, potassium_mg: 55.3, phosphorus_mg: null, calcium_mg: 10, fluid_ml: 68 };
+    render(<NutrientTray values={values} />);
+    expect(screen.getByText("55.3 mg")).toBeInTheDocument();
+    expect(screen.getByText("0 g")).toBeInTheDocument(); // a real zero stays a zero
+    expect(screen.getAllByText("Not available")).toHaveLength(2);
   });
 });

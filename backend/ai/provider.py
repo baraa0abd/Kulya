@@ -42,8 +42,9 @@ class LLMProvider(ABC):
     model_name: str
 
     @abstractmethod
-    def complete_json(self, prompt_id: str, payload: dict) -> dict:
-        """`payload` is the structured input. Returns the model's JSON object or raises ProviderError."""
+    def complete_json(self, prompt_id: str, payload: dict, image: tuple[str, str] | None = None) -> dict:
+        """`payload` is the structured input; `image` is an optional (media_type, base64) photo.
+        Returns the model's JSON object or raises ProviderError."""
 
 
 def user_message(payload: dict) -> str:
@@ -62,13 +63,17 @@ class AnthropicProvider(LLMProvider):
             api_key=settings.ANTHROPIC_API_KEY, timeout=settings.LLM_TIMEOUT_SECONDS, max_retries=2
         )
 
-    def complete_json(self, prompt_id: str, payload: dict) -> dict:
+    def complete_json(self, prompt_id: str, payload: dict, image: tuple[str, str] | None = None) -> dict:
+        content: Any = user_message(payload)
+        if image:
+            source = {"type": "base64", "media_type": image[0], "data": image[1]}
+            content = [{"type": "image", "source": source}, {"type": "text", "text": content}]
         try:
             message = self._client.messages.create(
                 model=self.model_name,
                 max_tokens=8000,
                 system=load_prompt(prompt_id),
-                messages=[{"role": "user", "content": user_message(payload)}],
+                messages=[{"role": "user", "content": content}],
                 output_config={"effort": settings.LLM_EFFORT},
             )
         except self._error as exc:
@@ -84,7 +89,11 @@ class MockProvider(LLMProvider):
 
     model_name = "mock"
 
-    def complete_json(self, prompt_id: str, payload: dict) -> dict:
+    def complete_json(self, prompt_id: str, payload: dict, image: tuple[str, str] | None = None) -> dict:
+        if prompt_id.startswith("nutrition"):
+            from nutrition.ai import mock_response  # lazy: nutrition imports this module
+
+            return mock_response(prompt_id, payload, image)
         ctx = payload["context"]
         session_id = ctx["session"]["id"]
         if prompt_id.startswith("review"):

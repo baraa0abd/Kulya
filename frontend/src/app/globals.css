@@ -277,3 +277,15 @@
     background: var(--color-brand-hover);
   }
 }
+
+/* Printing a report (the PDF export): the document only, no application chrome. */
+@media print {
+  aside,
+  header,
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+}

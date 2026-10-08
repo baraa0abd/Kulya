@@ -33,6 +33,20 @@ is not. It is not a claim of compliance with any health-data regulation.
   app refuses to start with the default secret key; secure-cookie, HSTS and SSL-redirect settings
   are available by environment variable. Database and Redis ports bind to loopback only.
 
+### Nutrition module
+
+- Every `/api/nutrition/` endpoint is behind `RolePolicy` and `patients_for`; out-of-scope ids
+  answer 404 (tested for unassigned staff, another organization, another patient, no consent,
+  wrong consent scope, revoked and expired consent).
+- Reading the diary and recording meals are separate family consent scopes.
+- Nurses and patients cannot approve plans, review AI drafts or release reports (403, tested).
+- Patients and caregivers see only approved personalized suggestions, approved food-and-lab
+  reviews and released reports; inside a released report, laboratory results appear only if a
+  doctor released that laboratory report (and, for a caregiver, the `labs` scope is granted).
+- Meal photos are not stored. The USDA key is sent in a header, never in a URL.
+- Text in a meal description or photo is treated as data; the recognition schema has no field
+  through which a model could set a nutrient value (tested).
+
 ## Known gaps (not done)
 
 - Tokens are kept in `sessionStorage`, readable by any script on the page. HttpOnly cookie
@@ -48,6 +62,10 @@ is not. It is not a claim of compliance with any health-data regulation.
   dependency audit was run.
 - No penetration test, no threat model review, no privacy impact assessment.
 - The gitleaks CI job has not been run.
+- Nutrition: voice entry uses the browser's speech recognition, which in Chromium sends audio to
+  the browser vendor. With `LLM_PROVIDER=anthropic`, meal photos and descriptions are sent to the
+  model provider. Neither has had a privacy review. The causal-wording filter is a keyword list
+  and can be evaded by paraphrase; clinician review is the real control.
 
 ## Before any real-patient use
 
