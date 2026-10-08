@@ -16,6 +16,9 @@ docker compose up --build
 
 Open http://localhost:3000 and sign in with a demo account and your `DEMO_PASSWORD`.
 
+The interface is Arabic and right-to-left by default; the **English** button in the header (and on
+the sign-in page) switches language. Record content and AI drafts are shown as stored.
+
 | Account | Role | Sees |
 |---|---|---|
 | `doctor1` | doctor | SYN-001, SYN-002 |
@@ -47,8 +50,8 @@ and `ANTHROPIC_API_KEY` to use Claude.
 
 ```bash
 cd backend  && .venv/Scripts/python -m pytest          # 69 tests, needs the db container
-cd frontend && npm test                                # 9 unit/component tests
-cd frontend && npx playwright install chromium && npm run e2e   # 6 E2E tests, needs the stack running
+cd frontend && npm test                                # 10 unit/component tests
+cd frontend && npx playwright install chromium && npm run e2e   # 7 E2E tests, needs the stack running
 ```
 
 The E2E run changes today's session for SYN-001. Reset the demo data afterwards:

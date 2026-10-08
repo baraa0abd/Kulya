@@ -109,6 +109,11 @@ Next.js App Router, TypeScript strict, Tailwind, shadcn/ui, Recharts, React Hook
 
 Route guards in the browser are navigation convenience only; the API enforces access.
 
+Language: `src/lib/i18n.tsx` holds an English-to-Arabic dictionary keyed by the English source
+string. Arabic (RTL) is the default; the choice is kept in `localStorage`. Missing entries fall
+back to English. Dates use Arabic month names with Latin digits; values and units are never
+translated.
+
 ## API
 
 Groups under `/api/`: `auth`, `patients`, `care-assignments`, `consent`, `prescriptions`,

@@ -29,6 +29,7 @@ import {
 } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { dateOnly, dateTime, label, minutesBetween, timeOnly, withUnit } from "@/lib/format";
+import { setLocale, tr, Tx, useLocale } from "@/lib/i18n";
 import { type Loaded, useAction, useList } from "@/lib/hooks";
 
 // ---------------------------------------------------------------------------------------------
@@ -45,20 +46,22 @@ const ROLE_NAME: Record<string, string> = {
 export function Shell({ title, back, children }: { title: string; back?: string; children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const router = useRouter();
+  useLocale();
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="border-b bg-white">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3">
           <Link href="/" className="text-lg font-semibold text-teal-800">
-            Dialysis Copilot
+            <Tx k="Dialysis Copilot" />
           </Link>
-          <span className="text-sm text-slate-500">Synthetic demonstration data</span>
-          <div className="ml-auto flex items-center gap-3 text-sm">
+          <span className="text-sm text-slate-500"><Tx k="Synthetic demonstration data" /></span>
+          <div className="ms-auto flex items-center gap-3 text-sm">
             {user && (
               <span data-testid="whoami">
-                {user.display_name || user.username} · {ROLE_NAME[user.role] ?? user.role}
+                {user.display_name || user.username} · {tr(ROLE_NAME[user.role] ?? user.role)}
               </span>
             )}
+            <LanguageToggle />
             <Button
               variant="outline"
               size="sm"
@@ -67,7 +70,7 @@ export function Shell({ title, back, children }: { title: string; back?: string;
                 router.replace("/login/");
               }}
             >
-              Sign out
+              <Tx k="Sign out" />
             </Button>
           </div>
         </div>
@@ -76,10 +79,10 @@ export function Shell({ title, back, children }: { title: string; back?: string;
         <div className="flex flex-wrap items-center gap-3">
           {back && (
             <Link href={back} className="text-sm text-teal-800 underline">
-              ← Back
+              <Tx k="← Back" />
             </Link>
           )}
-          <h1 className="text-2xl font-semibold text-slate-900">{title}</h1>
+          <h1 className="text-2xl font-semibold text-slate-900">{tr(title)}</h1>
         </div>
         {children}
       </main>
@@ -103,9 +106,9 @@ export function Section({
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-2">
         <div>
           <CardTitle>
-            <h2>{title}</h2>
+            <h2>{tr(title)}</h2>
           </CardTitle>
-          {description && <CardDescription>{description}</CardDescription>}
+          {description && <CardDescription>{tr(description)}</CardDescription>}
         </div>
         {action}
       </CardHeader>
@@ -124,21 +127,31 @@ export function Load<T>({
   empty?: string;
   children: (data: T) => React.ReactNode;
 }) {
-  if (from.loading) return <p className="text-sm text-slate-500">Loading…</p>;
+  if (from.loading) return <p className="text-sm text-slate-500"><Tx k="Loading…" /></p>;
   if (from.error) {
     return (
       <div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-red-700">
         <span>{from.error}</span>
         <Button variant="outline" size="sm" onClick={from.reload}>
-          Retry
+          <Tx k="Retry" />
         </Button>
       </div>
     );
   }
   if (from.data === null || (Array.isArray(from.data) && from.data.length === 0)) {
-    return <p className="text-sm text-slate-500">{empty ?? "Nothing to show yet."}</p>;
+    return <p className="text-sm text-slate-500">{tr(empty ?? "Nothing to show yet.")}</p>;
   }
   return <>{children(from.data)}</>;
+}
+
+/** Switches between Arabic (right-to-left, default) and English. */
+export function LanguageToggle() {
+  const locale = useLocale();
+  return (
+    <Button variant="ghost" size="sm" onClick={() => setLocale(locale === "ar" ? "en" : "ar")}>
+      {locale === "ar" ? "English" : "العربية"}
+    </Button>
+  );
 }
 
 export function ErrorNote({ message }: { message: string | null }) {
@@ -164,6 +177,7 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 export function Status({ value }: { value: string }) {
+  useLocale();
   return <Badge className={STATUS_STYLE[value] ?? "bg-slate-100 text-slate-800"}>{label(value)}</Badge>;
 }
 
@@ -171,7 +185,7 @@ export function Status({ value }: { value: string }) {
 export function AiLabel({ text }: { text: string }) {
   return (
     <p className="rounded border border-violet-200 bg-violet-50 px-3 py-2 text-sm text-violet-900" data-testid="ai-label">
-      <strong>AI-generated.</strong> {text.replace(/^AI-generated draft\.\s*/, "")}
+      <strong><Tx k="AI-generated." /></strong> {tr(text.replace(/^AI-generated draft\.\s*/, ""))}
     </p>
   );
 }
@@ -212,6 +226,7 @@ export function ZForm<S extends z.ZodType>({
   );
   const form = useForm<FieldValues>({ resolver: zodResolver(schema as never) as never, defaultValues: initial });
   const action = useAction();
+  useLocale();
   const submit = form.handleSubmit(async (values) => {
     if (await action.run(() => onSubmit(values as z.output<S>))) form.reset(initial);
   });
@@ -224,14 +239,14 @@ export function ZForm<S extends z.ZodType>({
         const wide = field.type === "textarea" ? "sm:col-span-2" : "";
         return (
           <div key={field.name} className={`space-y-1 ${wide}`}>
-            <Label htmlFor={id}>{field.label}</Label>
+            <Label htmlFor={id}>{tr(field.label)}</Label>
             {field.type === "textarea" ? (
               <Textarea id={id} rows={3} dir="auto" {...form.register(field.name)} />
             ) : field.type === "select" ? (
               <select id={id} className={control} {...form.register(field.name)}>
                 {field.options?.map(([value, text]) => (
                   <option key={value} value={value}>
-                    {text}
+                    {tr(text)}
                   </option>
                 ))}
               </select>
@@ -243,10 +258,10 @@ export function ZForm<S extends z.ZodType>({
                 {...form.register(field.name)}
               />
             )}
-            {field.hint && <p className="text-xs text-slate-500">{field.hint}</p>}
+            {field.hint && <p className="text-xs text-slate-500">{tr(field.hint)}</p>}
             {typeof error === "string" && (
               <p role="alert" className="text-xs text-red-700">
-                {error}
+                {tr(error)}
               </p>
             )}
           </div>
@@ -254,7 +269,7 @@ export function ZForm<S extends z.ZodType>({
       })}
       <div className="flex items-center gap-3 sm:col-span-2">
         <Button type="submit" disabled={action.pending}>
-          {action.pending ? "Saving…" : submitLabel}
+          {action.pending ? tr("Saving…") : tr(submitLabel)}
         </Button>
         <ErrorNote message={action.error} />
       </div>
@@ -272,10 +287,10 @@ export function SessionTable({ sessions, hrefFor }: { sessions: Session[]; hrefF
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Date</TableHead>
-            <TableHead>Patient</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Documented duration</TableHead>
+            <TableHead><Tx k="Date" /></TableHead>
+            <TableHead><Tx k="Patient" /></TableHead>
+            <TableHead><Tx k="Status" /></TableHead>
+            <TableHead><Tx k="Documented duration" /></TableHead>
             <TableHead />
           </TableRow>
         </TableHeader>
@@ -288,10 +303,10 @@ export function SessionTable({ sessions, hrefFor }: { sessions: Session[]; hrefF
                 <Status value={s.status} />
               </TableCell>
               <TableCell>{withUnit(minutesBetween(s.started_at, s.ended_at), "min")}</TableCell>
-              <TableCell className="text-right">
+              <TableCell className="text-end">
                 {hrefFor && (
                   <Link className="text-teal-800 underline" href={hrefFor(s)}>
-                    Open
+                    <Tx k="Open" />
                   </Link>
                 )}
               </TableCell>
@@ -304,14 +319,16 @@ export function SessionTable({ sessions, hrefFor }: { sessions: Session[]; hrefF
 }
 
 export function Measurements({ session }: { session: SessionDetail }) {
+  useLocale();
+  const missing = tr("Not recorded");
   const rows: [string, string, string][] = [
-    ["Prescribed duration", withUnit(session.prescribed_duration_minutes, "min"), "prescribed"],
-    ["Documented duration", withUnit(minutesBetween(session.started_at, session.ended_at), "min"), "calculated"],
-    ["Pre-treatment weight", withUnit(session.pre_weight_kg, "kg"), "measured"],
-    ["Post-treatment weight", withUnit(session.post_weight_kg, "kg"), "measured"],
-    ["Ultrafiltration volume", withUnit(session.uf_volume_ml, "mL"), "measured"],
+    [tr("Prescribed duration"), withUnit(session.prescribed_duration_minutes, "min"), tr("prescribed")],
+    [tr("Documented duration"), withUnit(minutesBetween(session.started_at, session.ended_at), "min"), tr("calculated")],
+    [tr("Pre-treatment weight"), withUnit(session.pre_weight_kg, "kg"), tr("measured")],
+    [tr("Post-treatment weight"), withUnit(session.post_weight_kg, "kg"), tr("measured")],
+    [tr("Ultrafiltration volume"), withUnit(session.uf_volume_ml, "mL"), tr("measured")],
     ...session.vitals.map((v: Vital): [string, string, string] => [
-      `${label(v.kind)} (${v.phase}, ${timeOnly(v.recorded_at)})`,
+      `${label(v.kind)} (${tr(v.phase)}, ${timeOnly(v.recorded_at)})`,
       withUnit(v.value, v.unit),
       label(v.source),
     ]),
@@ -326,16 +343,16 @@ export function Measurements({ session }: { session: SessionDetail }) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Measurement</TableHead>
-            <TableHead>Value</TableHead>
-            <TableHead>Source</TableHead>
+            <TableHead><Tx k="Measurement" /></TableHead>
+            <TableHead><Tx k="Value" /></TableHead>
+            <TableHead><Tx k="Source" /></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {rows.map(([name, value, source]) => (
             <TableRow key={name}>
               <TableCell>{name}</TableCell>
-              <TableCell className={value === "Not recorded" ? "text-amber-800" : "font-medium"}>{value}</TableCell>
+              <TableCell className={value === missing ? "text-amber-800" : "font-medium"}>{value}</TableCell>
               <TableCell className="text-slate-500">{source}</TableCell>
             </TableRow>
           ))}
@@ -361,28 +378,29 @@ export function Timeline({
     ...session.nursing_actions.map((a: NursingAction) => ({
       id: a.id,
       at: a.performed_at,
-      kind: "Action",
-      title: `${label(a.action_type)} · ${a.author_name}${a.amends ? " (amendment)" : ""}`,
-      body: `${a.description}${a.reason ? ` — Reason: ${a.reason}` : " — No reason documented"}`,
+      kind: tr("Action"),
+      title: `${label(a.action_type)} · ${a.author_name}${a.amends ? ` ${tr("(amendment)")}` : ""}`,
+      body: `${a.description} — ${a.reason ? `${tr("Reason:")} ${a.reason}` : tr("No reason documented")}`,
       extra: renderAction?.(a),
     })),
     ...session.events.map((e: SessionEvent) => ({
       id: e.id,
       at: e.occurred_at,
-      kind: "Event",
+      kind: tr("Event"),
       title: label(e.event_type),
-      body: `${e.description}${e.resolved_at ? ` — Resolved: ${e.resolution}` : " — No resolution documented"}`,
+      body: `${e.description} — ${e.resolved_at ? `${tr("Resolved:")} ${e.resolution}` : tr("No resolution documented")}`,
       extra: renderEvent?.(e),
     })),
     ...session.nursing_notes.map((n: NursingNote) => ({
       id: n.id,
       at: n.created_at,
-      kind: "Note",
+      kind: tr("Note"),
       title: n.author_name,
       body: n.text,
     })),
   ].sort((a, b) => a.at.localeCompare(b.at));
-  if (items.length === 0) return <p className="text-sm text-slate-500">No nursing documentation yet.</p>;
+  useLocale();
+  if (items.length === 0) return <p className="text-sm text-slate-500"><Tx k="No nursing documentation yet." /></p>;
   return (
     <ol className="space-y-3">
       {items.map((item) => (
@@ -390,7 +408,7 @@ export function Timeline({
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <Badge variant="outline">{item.kind}</Badge>
             <span className="font-medium">{item.title}</span>
-            <time className="ml-auto text-slate-500">{dateTime(item.at)}</time>
+            <time className="ms-auto text-slate-500">{dateTime(item.at)}</time>
           </div>
           <p className="mt-1 text-sm" dir="auto">
             {item.body}
@@ -406,9 +424,10 @@ export function NotificationInbox() {
   const inbox = useList<Notification>("/notifications/");
   const action = useAction();
   const unread = inbox.data?.filter((n) => !n.read_at).length ?? 0;
+  useLocale();
   return (
     <Section
-      title={`Notifications${unread ? ` (${unread} unread)` : ""}`}
+      title={`${tr("Notifications")}${unread ? ` (${unread} ${tr("unread")})` : ""}`}
       action={
         unread > 0 && (
           <Button
@@ -417,7 +436,7 @@ export function NotificationInbox() {
             disabled={action.pending}
             onClick={async () => (await action.run(() => api.post("/notifications/read-all/"))) && inbox.reload()}
           >
-            Mark all read
+            <Tx k="Mark all read" />
           </Button>
         )
       }
@@ -427,8 +446,8 @@ export function NotificationInbox() {
           <ul className="divide-y text-sm">
             {items.slice(0, 12).map((n) => (
               <li key={n.id} className={`flex flex-wrap gap-2 py-2 ${n.read_at ? "text-slate-500" : "font-medium"}`}>
-                <span>{n.title}</span>
-                <time className="ml-auto text-slate-500">{dateTime(n.created_at)}</time>
+                <span>{tr(n.title)}</span>
+                <time className="ms-auto text-slate-500">{dateTime(n.created_at)}</time>
               </li>
             ))}
           </ul>
@@ -443,16 +462,17 @@ export function NotificationInbox() {
 export function LabTrends({ reports }: { reports: LabReport[] }) {
   const analytes = useMemo(() => [...new Set(reports.flatMap((r) => r.results.map((x) => x.analyte)))].sort(), [reports]);
   const [chosen, setChosen] = useState<string | null>(null);
+  useLocale();
   const analyte = chosen ?? analytes[0];
   const points = reports
     .flatMap((r) => r.results.filter((x) => x.analyte === analyte).map((x) => ({ report: r, result: x })))
     .sort((a, b) => a.report.collected_at.localeCompare(b.report.collected_at));
-  if (points.length === 0) return <p className="text-sm text-slate-500">No laboratory results available.</p>;
+  if (points.length === 0) return <p className="text-sm text-slate-500"><Tx k="No laboratory results available." /></p>;
   const { unit, reference_low: low, reference_high: high } = points[0].result;
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2 text-sm">
-        <Label htmlFor="analyte">Analyte</Label>
+        <Label htmlFor="analyte"><Tx k="Analyte" /></Label>
         <select
           id="analyte"
           className="rounded-md border px-2 py-1"
@@ -464,8 +484,8 @@ export function LabTrends({ reports }: { reports: LabReport[] }) {
           ))}
         </select>
         <span className="text-slate-500">
-          Unit: {unit}
-          {low && high ? ` · Laboratory reference range ${Number(low)}–${Number(high)} ${unit}` : ""}
+          {tr("Unit:")} {unit}
+          {low && high ? ` · ${tr("Laboratory reference range")} ${Number(low)}–${Number(high)} ${unit}` : ""}
         </span>
       </div>
       <div className="h-56 w-full" role="img" aria-label={`${analyte} trend in ${unit}`}>
@@ -485,9 +505,9 @@ export function LabTrends({ reports }: { reports: LabReport[] }) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Collected</TableHead>
+            <TableHead><Tx k="Collected" /></TableHead>
             <TableHead>{analyte}</TableHead>
-            <TableHead>Released to patient</TableHead>
+            <TableHead><Tx k="Released to patient" /></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -495,7 +515,7 @@ export function LabTrends({ reports }: { reports: LabReport[] }) {
             <TableRow key={p.result.id}>
               <TableCell>{dateOnly(p.report.collected_at)}</TableCell>
               <TableCell>{withUnit(p.result.value, p.result.unit)}</TableCell>
-              <TableCell>{p.report.released_to_patient ? "Yes" : "No"}</TableCell>
+              <TableCell>{tr(p.report.released_to_patient ? "Yes" : "No")}</TableCell>
             </TableRow>
           ))}
         </TableBody>

@@ -10,11 +10,11 @@ Docker. All AI calls used the offline `MockProvider`. **No request was sent to t
 | Backend (pytest, PostgreSQL) | `cd backend && python -m pytest` | **69 passed**, 3 consecutive full runs |
 | Backend lint / format | `ruff check .`, `ruff format --check .` | clean |
 | Migrations | `manage.py makemigrations --check` | no pending changes |
-| Frontend unit + component (Vitest, RTL) | `npm test` | **9 passed** |
+| Frontend unit + component (Vitest, RTL) | `npm test` | **10 passed** |
 | Frontend lint | `npx eslint src` | clean |
 | Frontend types | `npx tsc --noEmit` (strict) | clean |
 | Frontend production build | `npx next build` | succeeded |
-| End-to-end (Playwright, Chromium) | `npm run e2e` | **6 passed** (run twice, the second time after the last backend change) |
+| End-to-end (Playwright, Chromium) | `npm run e2e` | **7 passed** (re-run after the Arabic interface was added) |
 | Docker Compose | `docker compose up --build -d` | 5 services up; see below |
 
 Backend breakdown: `test_security.py` 38, `test_ai.py` 23, `test_workflow.py` 8.
@@ -54,6 +54,10 @@ redirected away from staff screens and refused by the API; a nurse from another 
 frontend proxy; nursing action accepted in 0.34 s; AI review produced by the Celery worker via
 Redis and visible on the next poll (2 s).
 
+**Arabic interface** — the app loads Arabic and right-to-left, sign-in works in Arabic, the nurse
+dashboard headings are Arabic, and the toggle switches to English left-to-right (1 browser test,
+1 unit test). The other browser tests run with the interface switched to English.
+
 ## Defects found by testing and fixed
 
 - Row locks combined with a nullable join failed on PostgreSQL (`FOR UPDATE` on an outer join).
@@ -75,6 +79,10 @@ Redis and visible on the next poll (2 s).
 - Python 3.12 (tests ran on 3.14; the Docker image uses 3.12 and started correctly).
 - Concurrency and load; multiple backend instances.
 - Backup and restore; HTTPS proxy settings.
+- The Arabic wording was written by the developer and not reviewed by a clinician or a native
+  medical translator. Only the sign-in page and nurse dashboard were checked in Arabic in a browser;
+  the other screens were not visually reviewed in RTL. Server-generated text (finding descriptions,
+  AI drafts, API error messages) is still English.
 - Mobile layouts were not checked in a browser (the layout uses responsive grids).
 - Accessibility was not audited (forms have labels; charts have text alternatives and tables).
 - mypy was not run.

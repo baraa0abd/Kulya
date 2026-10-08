@@ -1,20 +1,22 @@
-const DATE_TIME = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short" });
-const DATE = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" });
-const TIME = new Intl.DateTimeFormat("en-GB", { timeStyle: "short" });
+import { getLocale, tr } from "./i18n";
 
-export const dateTime = (iso: string | null | undefined) => (iso ? DATE_TIME.format(new Date(iso)) : "—");
-export const dateOnly = (iso: string | null | undefined) => (iso ? DATE.format(new Date(iso)) : "—");
-export const timeOnly = (iso: string | null | undefined) => (iso ? TIME.format(new Date(iso)) : "—");
+// Arabic month names with Latin digits, so numbers read the same as the measurements beside them.
+const format = (options: Intl.DateTimeFormatOptions) =>
+  new Intl.DateTimeFormat(getLocale() === "ar" ? "ar-u-nu-latn" : "en-GB", options);
 
-/** "systolic_bp" -> "Systolic bp" */
+export const dateTime = (iso: string | null | undefined) => (iso ? format({ dateStyle: "medium", timeStyle: "short" }).format(new Date(iso)) : "—");
+export const dateOnly = (iso: string | null | undefined) => (iso ? format({ dateStyle: "medium" }).format(new Date(iso)) : "—");
+export const timeOnly = (iso: string | null | undefined) => (iso ? format({ timeStyle: "short" }).format(new Date(iso)) : "—");
+
+/** "systolic_bp" -> "Systolic bp", then translated for the current language. */
 export const label = (code: string) => {
   const text = code.replaceAll("_", " ");
-  return text.charAt(0).toUpperCase() + text.slice(1);
+  return tr(text.charAt(0).toUpperCase() + text.slice(1));
 };
 
 /** A value is always shown with its unit; a missing value is shown as missing, never as zero. */
 export const withUnit = (value: string | number | null | undefined, unit: string) =>
-  value === null || value === undefined || value === "" ? "Not recorded" : `${Number(value)} ${unit}`;
+  value === null || value === undefined || value === "" ? tr("Not recorded") : `${Number(value)} ${unit}`;
 
 export const minutesBetween = (start: string | null, end: string | null): number | null =>
   start && end ? Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000) : null;
