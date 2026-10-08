@@ -24,6 +24,7 @@ with a human clinician between every AI draft and every patient.**
 
 - [The idea in one minute](#the-idea-in-one-minute)
 - [Who uses it](#who-uses-it)
+- [What it does](#what-it-does)
 - [How it works](#how-it-works)
   - [System architecture](#system-architecture)
   - [A dialysis session, end to end](#a-dialysis-session-end-to-end)
@@ -68,6 +69,42 @@ Three rules shape everything else:
 | **Renal dietitian** | Approves nutrition plans, reviews meal ideas and food-and-lab drafts, releases nutrition reports. |
 | **Patient** | Sees released summaries, released lab results and appointments; keeps a food diary; decides what family may see. |
 | **Family caregiver** | Sees only what the patient has shared, and only while that consent is valid. |
+
+## What it does
+
+Kulya has two halves: documenting and reviewing dialysis sessions, and managing renal nutrition.
+In both, AI only writes drafts and a clinician approves anything before a patient sees it.
+
+### Dialysis sessions
+
+| Feature | What happens |
+|---|---|
+| **Session documentation** | A nurse schedules, starts and completes a session, and records vitals, machine readings, nursing actions, notes and events such as low blood pressure or cramps. Signed records cannot be overwritten, only amended with a new record. |
+| **Completeness checks** | Fixed rules flag gaps: a missing post-treatment weight, an action with no reason, an unresolved event, a session shorter than prescribed. |
+| **AI documentation review** | After a session is completed, a draft explains the gaps and cites the records and protocol passages it used. It goes to the assigned doctor. |
+| **AI session summary** | A draft with a clinician version and a plain-language patient version. The doctor verifies or rejects it, then chooses whether to release it. |
+| **Doctor feedback** | The doctor writes feedback or a clarification request; the nurses on that patient are notified. |
+| **Orders and labs** | The doctor writes versioned dialysis orders, sees lab trends, and releases lab reports to the patient one at a time. |
+
+### Renal nutrition
+
+| Feature | What happens |
+|---|---|
+| **Food diary** | The patient types, speaks or photographs a meal; the assistant proposes foods and the patient confirms each line before saving. |
+| **Nutrient estimates** | The server calculates energy, protein, sodium, potassium, phosphorus, calcium and fluid from the food catalogue. Unknown values stay "not available", never zero. |
+| **Nutrition plan** | A doctor or dietitian approves per-meal limits and allergies; each change is a new version. |
+| **Meal ideas** | Recipes are compared with the approved plan by fixed rules; a clinician approves personalized ones before the patient sees them. |
+| **Food and lab view** | The diary and lab results side by side, with a descriptive AI draft that never claims a food caused a result. |
+| **Nutrition reports** | Computed facts plus an AI narrative, released by a clinician and printable to PDF. |
+| **Nurse observations** | Appetite or nausea concerns, which can be referred to the doctor and dietitian. |
+
+### Across the whole app
+
+- **Five roles** — nurse, doctor, renal dietitian, patient and family caregiver — each with its own dashboard.
+- **Access control** — staff see only patients on their care team; patients see only their own released information.
+- **Family sharing** — the patient chooses what a caregiver can see (summaries, appointments, labs, food diary, logging meals for them) and can revoke it.
+- **Notifications and audit trail** — each user has an inbox, and every write and sensitive read is logged.
+- **Arabic right-to-left interface** by default, with an English switch.
 
 ## How it works
 
