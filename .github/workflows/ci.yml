@@ -9,19 +9,19 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16
+        image: pgvector/pgvector:pg16
         env:
-          POSTGRES_USER: kulya
-          POSTGRES_PASSWORD: kulya
-          POSTGRES_DB: kulya
+          POSTGRES_USER: copilot
+          POSTGRES_PASSWORD: ci-only
+          POSTGRES_DB: copilot
         ports: ["5432:5432"]
         options: >-
-          --health-cmd "pg_isready -U kulya" --health-interval 5s --health-timeout 5s --health-retries 10
+          --health-cmd "pg_isready -U copilot" --health-interval 5s --health-timeout 5s --health-retries 10
     env:
-      DATABASE_URL: postgres://kulya:kulya@localhost:5432/kulya
+      DATABASE_URL: postgres://copilot:ci-only@localhost:5432/copilot
       DJANGO_SECRET_KEY: ci-only-key-not-used-anywhere-else-0123456789
       LLM_PROVIDER: mock
-      DEMO_MODE: "true"
+      CELERY_TASK_ALWAYS_EAGER: "true"
     defaults:
       run:
         working-directory: backend
@@ -34,21 +34,41 @@ jobs:
           cache-dependency-path: backend/requirements.txt
       - run: pip install -r requirements.txt
       - run: ruff check .
-      - run: black --check .
+      - run: ruff format --check .
       - run: python manage.py makemigrations --check --dry-run
-      - run: pytest -q
+      - run: pytest -q --create-db
 
   frontend:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: frontend/kulya_app
+        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - uses: actions/setup-node@v4
         with:
-          channel: stable
-          cache: true
-      - run: flutter pub get
-      - run: flutter analyze
-      - run: flutter test
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --legacy-peer-deps
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cp .env.example .env
+      - run: docker compose build
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
