@@ -6,6 +6,7 @@ import { z } from "zod";
 import { AiLabel, Load, Measurements, optionalNumber, requiredText, Status, Timeline, ZForm } from "@/components/app";
 import { ApiError, describeError, type SessionDetail } from "@/lib/api";
 import { label, minutesBetween, weekOf, withUnit } from "@/lib/format";
+import { setLocale, tr } from "@/lib/i18n";
 
 const session: SessionDetail = {
   id: "s1",
@@ -117,5 +118,25 @@ describe("ZForm", () => {
     await userEvent.click(screen.getByRole("button", { name: "Send" }));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledWith({ text: "Please clarify", amount: 12.5 }));
     expect(await screen.findByText("Session is completed.")).toBeInTheDocument();
+  });
+});
+
+describe("Arabic interface", () => {
+  it("translates labels, statuses and codes, and falls back to the source text", () => {
+    setLocale("ar", false);
+    try {
+      expect(document.documentElement.dir).toBe("rtl");
+      expect(document.documentElement.lang).toBe("ar");
+      expect(tr("Sign in")).toBe("تسجيل الدخول");
+      expect(label("action_without_reason")).toBe("إجراء بلا سبب");
+      expect(withUnit(null, "kg")).toBe("غير مسجَّل");
+      expect(withUnit("64.0", "kg")).toBe("64 kg"); // values and units are never translated
+      expect(tr("Some server text with no entry")).toBe("Some server text with no entry");
+      render(<Status value="pending_review" />);
+      expect(screen.getByText("بانتظار المراجعة")).toBeInTheDocument();
+    } finally {
+      setLocale("en", false);
+    }
+    expect(document.documentElement.dir).toBe("ltr");
   });
 });

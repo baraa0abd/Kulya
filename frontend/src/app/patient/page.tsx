@@ -7,6 +7,7 @@ import { ErrorNote, LabTrends, Load, NotificationInbox, requiredText, Section, S
 import { Button } from "@/components/ui/button";
 import { api, type Consent, type LabReport, type ReleasedSummary, type Session, type Vital } from "@/lib/api";
 import { useRole } from "@/lib/auth";
+import { tr, Tx, useLocale } from "@/lib/i18n";
 import { dateOnly, dateTime, label, weekOf, withUnit } from "@/lib/format";
 import { useAction, useList } from "@/lib/hooks";
 
@@ -22,14 +23,14 @@ function WeeklyHistory({ sessions }: { sessions: Session[] }) {
   for (const s of sessions) weeks.set(weekOf(s.scheduled_start), (weeks.get(weekOf(s.scheduled_start)) ?? 0) + 1);
   const data = [...weeks.entries()].sort().map(([week, count]) => ({ week: dateOnly(week), sessions: count }));
   return (
-    <div className="h-44 w-full" role="img" aria-label="Completed dialysis sessions per week">
+    <div className="h-44 w-full" role="img" aria-label={tr("Completed dialysis sessions per week")}>
       <ResponsiveContainer>
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="week" fontSize={12} />
           <YAxis allowDecimals={false} fontSize={12} width={30} />
           <Tooltip />
-          <Bar dataKey="sessions" fill="#0f766e" name="Completed sessions" />
+          <Bar dataKey="sessions" fill="#0f766e" name={tr("Completed sessions")} />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -49,16 +50,16 @@ function FamilySharing() {
                 <span className="font-medium">{c.caregiver_name}</span>
                 <span>{c.scopes.map(label).join(", ")}</span>
                 {c.revoked_at ? (
-                  <span className="text-slate-500">Stopped {dateOnly(c.revoked_at)}</span>
+                  <span className="text-slate-500">{tr("Stopped")} {dateOnly(c.revoked_at)}</span>
                 ) : (
                   <Button
                     size="sm"
                     variant="outline"
-                    className="ml-auto"
+                    className="ms-auto"
                     disabled={revoke.pending}
                     onClick={async () => (await revoke.run(() => api.post(`/consent/${c.id}/revoke/`))) && grants.reload()}
                   >
-                    Stop sharing
+                    <Tx k="Stop sharing" />
                   </Button>
                 )}
               </li>
@@ -121,7 +122,7 @@ function HomeMeasurements() {
                 <li key={v.id} className="flex gap-3 py-2">
                   <span>{label(v.kind)}</span>
                   <span className="font-medium">{withUnit(v.value, v.unit)}</span>
-                  <time className="ml-auto text-slate-500">{dateTime(v.recorded_at)}</time>
+                  <time className="ms-auto text-slate-500">{dateTime(v.recorded_at)}</time>
                 </li>
               ))}
             </ul>
@@ -133,6 +134,7 @@ function HomeMeasurements() {
 }
 
 export default function PatientDashboard() {
+  useLocale();
   const user = useRole("patient", "family");
   const upcoming = useList<Session>(user ? "/sessions/?status=scheduled&ordering=scheduled_start" : null);
   const completed = useList<Session>(user ? "/sessions/?status=completed&ordering=-scheduled_start" : null);
@@ -153,7 +155,7 @@ export default function PatientDashboard() {
               {rows.map((s) => (
                 <li key={s.id} className="rounded border bg-white p-4">
                   <p className="text-sm text-slate-500">
-                    {!isPatient && `${s.patient_name} · `}Session of {dateOnly(s.session_date)} · released {dateOnly(s.released_at)}
+                    {!isPatient && `${s.patient_name} · `}{tr("Session of")} {dateOnly(s.session_date)} · {tr("released")} {dateOnly(s.released_at)}
                   </p>
                   <p className="mt-1 text-lg">{s.text}</p>
                 </li>

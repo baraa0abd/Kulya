@@ -7,6 +7,7 @@ import { Load, Measurements, optionalNumber, requiredText, Section, Shell, Statu
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api, type Feedback, type Finding, type SessionDetail } from "@/lib/api";
 import { useRole } from "@/lib/auth";
+import { tr, Tx, useLocale } from "@/lib/i18n";
 import { dateTime, label } from "@/lib/format";
 import { useGet, useList } from "@/lib/hooks";
 
@@ -44,6 +45,7 @@ const startSchema = z.object({ pre_weight_kg: optionalNumber(20, 300) });
 const completeSchema = z.object({ post_weight_kg: optionalNumber(20, 300), uf_volume_ml: optionalNumber(0, 10000) });
 
 export default function NurseSessionPage() {
+  useLocale();
   const user = useRole("nurse");
   const { id } = useParams<{ id: string }>();
   const session = useGet<SessionDetail>(user ? `/sessions/${id}/` : null);
@@ -66,7 +68,7 @@ export default function NurseSessionPage() {
       <Load from={session}>
         {(s) => (
           <>
-            <Section title={`${s.patient_name} · scheduled ${dateTime(s.scheduled_start)}`} action={<Status value={s.status} />}>
+            <Section title={`${s.patient_name} · ${tr("scheduled")} ${dateTime(s.scheduled_start)}`} action={<Status value={s.status} />}>
               {s.status === "scheduled" && (
                 <ZForm
                   schema={startSchema}
@@ -81,7 +83,7 @@ export default function NurseSessionPage() {
               {s.status !== "scheduled" && <Measurements session={s} />}
               {s.status === "in_progress" && (
                 <div className="mt-4 border-t pt-4">
-                  <h3 className="mb-2 text-sm font-medium">Complete the session</h3>
+                  <h3 className="mb-2 text-sm font-medium"><Tx k="Complete the session" /></h3>
                   <ZForm
                     schema={completeSchema}
                     submitLabel="Complete session"
@@ -105,11 +107,11 @@ export default function NurseSessionPage() {
               >
                 <Tabs defaultValue="vital">
                   <TabsList>
-                    <TabsTrigger value="vital">Vital sign</TabsTrigger>
-                    <TabsTrigger value="action">Nursing action</TabsTrigger>
-                    <TabsTrigger value="reading">Machine reading</TabsTrigger>
-                    <TabsTrigger value="event">Event / incident</TabsTrigger>
-                    <TabsTrigger value="note">Note</TabsTrigger>
+                    <TabsTrigger value="vital"><Tx k="Vital sign" /></TabsTrigger>
+                    <TabsTrigger value="action"><Tx k="Nursing action" /></TabsTrigger>
+                    <TabsTrigger value="reading"><Tx k="Machine reading" /></TabsTrigger>
+                    <TabsTrigger value="event"><Tx k="Event / incident" /></TabsTrigger>
+                    <TabsTrigger value="note"><Tx k="Note" /></TabsTrigger>
                   </TabsList>
                   <TabsContent value="vital" className="pt-3">
                     <ZForm
@@ -187,11 +189,11 @@ export default function NurseSessionPage() {
                 <Load from={checks}>
                   {(result) =>
                     result.checked_at === null ? (
-                      <p className="text-sm text-slate-500">Checks run after the first nursing action is recorded.</p>
+                      <p className="text-sm text-slate-500"><Tx k="Checks run after the first nursing action is recorded." /></p>
                     ) : result.rule_findings.length === 0 ? (
-                      <p className="text-sm text-teal-800">No documentation gaps found ({dateTime(result.checked_at)}).</p>
+                      <p className="text-sm text-teal-800">{tr("No documentation gaps found")} ({dateTime(result.checked_at)}).</p>
                     ) : (
-                      <ul className="list-disc space-y-1 pl-5 text-sm" data-testid="completeness">
+                      <ul className="list-disc space-y-1 ps-5 text-sm" data-testid="completeness">
                         {result.rule_findings.map((f) => (
                           <li key={f.finding_id}>
                             <span className="font-medium">{label(f.check)}:</span> {f.description}

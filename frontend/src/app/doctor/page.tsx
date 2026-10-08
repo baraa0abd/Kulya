@@ -6,10 +6,12 @@ import { Load, NotificationInbox, Section, Shell, Status } from "@/components/ap
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { NursingAction, Patient, ReviewTask } from "@/lib/api";
 import { useRole } from "@/lib/auth";
+import { Tx, useLocale } from "@/lib/i18n";
 import { dateTime, label } from "@/lib/format";
 import { useList } from "@/lib/hooks";
 
 export default function DoctorDashboard() {
+  useLocale();
   const user = useRole("doctor");
   const patients = useList<Patient>(user ? "/patients/" : null);
   const tasks = useList<ReviewTask>(user ? "/doctor/review-tasks/?status=open" : null);
@@ -24,10 +26,10 @@ export default function DoctorDashboard() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Session</TableHead>
-                    <TableHead>Patient</TableHead>
-                    <TableHead>Findings</TableHead>
-                    <TableHead>AI review</TableHead>
+                    <TableHead><Tx k="Session" /></TableHead>
+                    <TableHead><Tx k="Patient" /></TableHead>
+                    <TableHead><Tx k="Findings" /></TableHead>
+                    <TableHead><Tx k="AI review" /></TableHead>
                     <TableHead />
                   </TableRow>
                 </TableHeader>
@@ -40,9 +42,9 @@ export default function DoctorDashboard() {
                       <TableCell>
                         <Status value={task.review_status ?? "processing"} />
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-end">
                         <Link className="text-teal-800 underline" href={`/doctor/sessions/${task.session}/`}>
-                          Review
+                          <Tx k="Review" />
                         </Link>
                       </TableCell>
                     </TableRow>
@@ -59,8 +61,8 @@ export default function DoctorDashboard() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Record no.</TableHead>
-                    <TableHead>Name</TableHead>
+                    <TableHead><Tx k="Record no." /></TableHead>
+                    <TableHead><Tx k="Name" /></TableHead>
                     <TableHead />
                   </TableRow>
                 </TableHeader>
@@ -69,9 +71,9 @@ export default function DoctorDashboard() {
                     <TableRow key={p.id}>
                       <TableCell>{p.mrn}</TableCell>
                       <TableCell>{p.full_name}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-end">
                         <Link className="text-teal-800 underline" href={`/doctor/patients/${p.id}/`}>
-                          History and labs
+                          <Tx k="History and labs" />
                         </Link>
                       </TableCell>
                     </TableRow>
@@ -91,11 +93,11 @@ export default function DoctorDashboard() {
                     <div className="flex flex-wrap gap-2">
                       <span className="font-medium">{label(a.action_type)}</span>
                       <span className="text-slate-500">{a.author_name}</span>
-                      <time className="ml-auto text-slate-500">{dateTime(a.performed_at)}</time>
+                      <time className="ms-auto text-slate-500">{dateTime(a.performed_at)}</time>
                     </div>
                     <p dir="auto">{a.description}</p>
                     <Link className="text-teal-800 underline" href={`/doctor/sessions/${a.session}/`}>
-                      Open session
+                      <Tx k="Open session" />
                     </Link>
                   </li>
                 ))}

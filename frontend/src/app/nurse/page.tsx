@@ -6,6 +6,7 @@ import { z } from "zod";
 import { Load, NotificationInbox, Section, SessionTable, Shell, ZForm } from "@/components/app";
 import { api, type Feedback, type Patient, type Session } from "@/lib/api";
 import { useRole } from "@/lib/auth";
+import { Tx, useLocale } from "@/lib/i18n";
 import { dateTime, label, today } from "@/lib/format";
 import { useList } from "@/lib/hooks";
 
@@ -15,6 +16,7 @@ const scheduleSchema = z.object({
 });
 
 export default function NurseDashboard() {
+  useLocale();
   const user = useRole("nurse");
   const patients = useList<Patient>(user ? "/patients/" : null);
   const schedule = useList<Session>(user ? `/sessions/?date=${today()}&ordering=scheduled_start` : null);
@@ -41,7 +43,7 @@ export default function NurseDashboard() {
                     </li>
                   ))}
                 </ul>
-                <h3 className="mb-2 text-sm font-medium">Schedule a session</h3>
+                <h3 className="mb-2 text-sm font-medium"><Tx k="Schedule a session" /></h3>
                 <ZForm
                   schema={scheduleSchema}
                   submitLabel="Schedule session"
@@ -76,11 +78,11 @@ export default function NurseDashboard() {
                     <div className="flex flex-wrap gap-2">
                       <span className="font-medium">{label(f.kind)}</span>
                       <span className="text-slate-500">{f.author_name}</span>
-                      <time className="ml-auto text-slate-500">{dateTime(f.created_at)}</time>
+                      <time className="ms-auto text-slate-500">{dateTime(f.created_at)}</time>
                     </div>
                     <p dir="auto">{f.text}</p>
                     <Link className="text-teal-800 underline" href={`/nurse/sessions/${f.session}/`}>
-                      Open session
+                      <Tx k="Open session" />
                     </Link>
                   </li>
                 ))}

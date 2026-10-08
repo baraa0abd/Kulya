@@ -7,6 +7,7 @@ import { AiLabel, ErrorNote, Load, Measurements, requiredText, Section, Shell, S
 import { Button } from "@/components/ui/button";
 import { type AIReview, type AISummary, api, type Feedback, type SessionDetail } from "@/lib/api";
 import { useRole } from "@/lib/auth";
+import { tr, Tx, useLocale } from "@/lib/i18n";
 import { dateTime, label } from "@/lib/format";
 import { useAction, useGet, useList } from "@/lib/hooks";
 
@@ -20,28 +21,28 @@ function ReviewCard({ review, onRequest }: { review: AIReview | undefined; onReq
   const action = useAction();
   const request = (
     <Button variant="outline" size="sm" disabled={action.pending} onClick={async () => (await action.run(async () => onRequest())) && undefined}>
-      Request reanalysis
+      <Tx k="Request reanalysis" />
     </Button>
   );
   if (!review) {
     return (
       <Section title="AI documentation review" action={request}>
-        <p className="text-sm text-slate-500">No review has been generated for this session yet.</p>
+        <p className="text-sm text-slate-500"><Tx k="No review has been generated for this session yet." /></p>
       </Section>
     );
   }
   const passages = new Map(review.protocol_passages.map((p) => [p.id, p]));
   return (
-    <Section title="AI documentation review" description={`Generated ${dateTime(review.created_at)}`} action={request}>
+    <Section title="AI documentation review" description={`${tr("Generated")} ${dateTime(review.created_at)}`} action={request}>
       <div className="space-y-3 text-sm">
         <div className="flex flex-wrap items-center gap-2">
           <Status value={review.status} />
-          {review.model_name && <span className="text-slate-500">Model: {review.model_name}</span>}
+          {review.model_name && <span className="text-slate-500">{tr("Model:")} {review.model_name}</span>}
         </div>
         {review.status === "ai_unavailable" && (
           <p role="alert" className="rounded border border-red-200 bg-red-50 px-3 py-2 text-red-900">
-            AI analysis is unavailable for this review ({review.ai_error.map((e) => e.code).join(", ") || "no detail"}).
-            The rule-based findings below are still valid, and you can review the session as usual.
+            {tr("AI analysis is unavailable for this review")} ({review.ai_error.map((e) => e.code).join(", ") || "—"}).
+            <Tx k="The rule-based findings below are still valid, and you can review the session as usual." />
           </p>
         )}
         {review.output && (
@@ -50,8 +51,8 @@ function ReviewCard({ review, onRequest }: { review: AIReview | undefined; onReq
             <p>{review.output.summary}</p>
             {review.output.documentation_gaps.length > 0 && (
               <div>
-                <h3 className="font-medium">Documentation gaps</h3>
-                <ul className="list-disc space-y-1 pl-5">
+                <h3 className="font-medium"><Tx k="Documentation gaps" /></h3>
+                <ul className="list-disc space-y-1 ps-5">
                   {review.output.documentation_gaps.map((gap) => (
                     <li key={gap.finding_id}>
                       {gap.description}
@@ -60,7 +61,7 @@ function ReviewCard({ review, onRequest }: { review: AIReview | undefined; onReq
                         return p ? (
                           <span key={ref} className="ml-1 text-slate-500">
                             [{p.title} v{p.protocol_version} — {p.section}
-                            {p.is_synthetic ? ", synthetic demo policy" : ""}]
+                            {p.is_synthetic ? `, ${tr("synthetic demo policy")}` : ""}]
                           </span>
                         ) : null;
                       })}
@@ -71,8 +72,8 @@ function ReviewCard({ review, onRequest }: { review: AIReview | undefined; onReq
             )}
             {review.output.questions_for_doctor.length > 0 && (
               <div>
-                <h3 className="font-medium">Questions for you</h3>
-                <ul className="list-disc pl-5">
+                <h3 className="font-medium"><Tx k="Questions for you" /></h3>
+                <ul className="list-disc ps-5">
                   {review.output.questions_for_doctor.map((q) => (
                     <li key={q}>{q}</li>
                   ))}
@@ -82,11 +83,11 @@ function ReviewCard({ review, onRequest }: { review: AIReview | undefined; onReq
           </>
         )}
         <div>
-          <h3 className="font-medium">Rule-based documentation checks ({review.rule_findings.length})</h3>
+          <h3 className="font-medium">{tr("Rule-based documentation checks")} ({review.rule_findings.length})</h3>
           {review.rule_findings.length === 0 ? (
-            <p className="text-slate-500">No gaps were found by the automated checks.</p>
+            <p className="text-slate-500"><Tx k="No gaps were found by the automated checks." /></p>
           ) : (
-            <ul className="list-disc pl-5">
+            <ul className="list-disc ps-5">
               {review.rule_findings.map((f) => (
                 <li key={f.finding_id}>
                   <span className="font-medium">{label(f.check)}:</span> {f.description}
@@ -106,19 +107,19 @@ function SummaryCard({ summary, sessionId, reload }: { summary: AISummary | unde
   const act = (path: string, body?: unknown) => async () => (await action.run(() => api.post(path, body))) && reload();
   const generate = (
     <Button variant="outline" size="sm" disabled={action.pending} onClick={act("/ai/summaries/generate/", { session: sessionId })}>
-      Generate new version
+      <Tx k="Generate new version" />
     </Button>
   );
   if (!summary) {
     return (
       <Section title="AI session summary" action={generate}>
-        <p className="text-sm text-slate-500">No summary yet. One is generated when the session is completed.</p>
+        <p className="text-sm text-slate-500"><Tx k="No summary yet. One is generated when the session is completed." /></p>
         <ErrorNote message={action.error} />
       </Section>
     );
   }
   return (
-    <Section title={`AI session summary (version ${summary.version})`} action={generate}>
+    <Section title={`${tr("AI session summary")} (${tr("version")} ${summary.version})`} action={generate}>
       <div className="space-y-3 text-sm">
         <div className="flex flex-wrap items-center gap-2">
           <Status value={summary.status} />
@@ -126,8 +127,8 @@ function SummaryCard({ summary, sessionId, reload }: { summary: AISummary | unde
         </div>
         {summary.status === "ai_unavailable" && (
           <p role="alert" className="rounded border border-red-200 bg-red-50 px-3 py-2 text-red-900">
-            AI summary generation failed or was rejected by validation (
-            {summary.ai_error.map((e) => e.code).join(", ") || "no detail"}). The session record is unaffected.
+            {tr("AI summary generation failed or was rejected by validation")} (
+            {summary.ai_error.map((e) => e.code).join(", ") || "—"}). {tr("The session record is unaffected.")}
           </p>
         )}
         {summary.output && (
@@ -142,11 +143,11 @@ function SummaryCard({ summary, sessionId, reload }: { summary: AISummary | unde
               ] as const
             ).map(([title, items]) => (
               <div key={title}>
-                <h3 className="font-medium">{title}</h3>
+                <h3 className="font-medium">{tr(title)}</h3>
                 {items.length === 0 ? (
-                  <p className="text-slate-500">None.</p>
+                  <p className="text-slate-500"><Tx k="None." /></p>
                 ) : (
-                  <ul className="list-disc pl-5" dir="auto">
+                  <ul className="list-disc ps-5" dir="auto">
                     {items.map((item) => (
                       <li key={item}>{item}</li>
                     ))}
@@ -155,7 +156,7 @@ function SummaryCard({ summary, sessionId, reload }: { summary: AISummary | unde
               </div>
             ))}
             <div className="rounded border bg-slate-50 p-3">
-              <h3 className="font-medium">Patient-friendly version (shown to the patient only after release)</h3>
+              <h3 className="font-medium"><Tx k="Patient-friendly version (shown to the patient only after release)" /></h3>
               <p>{summary.output.patient_summary}</p>
             </div>
           </>
@@ -164,16 +165,16 @@ function SummaryCard({ summary, sessionId, reload }: { summary: AISummary | unde
           {summary.status === "unverified" && (
             <>
               <Button disabled={action.pending} onClick={act(`/ai/summaries/${summary.id}/verify/`)}>
-                Verify summary
+                <Tx k="Verify summary" />
               </Button>
               <Button variant="outline" disabled={action.pending} onClick={act(`/ai/summaries/${summary.id}/reject/`)}>
-                Reject
+                <Tx k="Reject" />
               </Button>
             </>
           )}
           {summary.status === "verified" && !summary.released && (
             <Button disabled={action.pending} onClick={act(`/ai/summaries/${summary.id}/release/`)}>
-              Release to patient
+              <Tx k="Release to patient" />
             </Button>
           )}
         </div>
@@ -184,6 +185,7 @@ function SummaryCard({ summary, sessionId, reload }: { summary: AISummary | unde
 }
 
 export default function DoctorSessionPage() {
+  useLocale();
   const user = useRole("doctor");
   const { id } = useParams<{ id: string }>();
   const session = useGet<SessionDetail>(user ? `/sessions/${id}/` : null);

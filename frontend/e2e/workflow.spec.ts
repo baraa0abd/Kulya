@@ -25,6 +25,29 @@ async function signIn(page: Page, username: string, home: RegExp) {
 }
 
 test.describe.configure({ mode: "serial" });
+
+test("the interface is Arabic and right-to-left by default", async ({ page }) => {
+  await page.goto("/login/");
+  await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+  await expect(page.locator("html")).toHaveAttribute("lang", "ar");
+  await expect(page.getByRole("button", { name: "تسجيل الدخول" })).toBeVisible();
+  await page.getByLabel("اسم المستخدم").fill("nurse1");
+  await page.getByLabel("كلمة المرور").fill(demoPassword());
+  await page.getByRole("button", { name: "تسجيل الدخول" }).click();
+  await expect(page).toHaveURL(/\/nurse\/$/);
+  await expect(page.getByRole("heading", { name: "لوحة التمريض" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "جدول الغسيل لليوم" })).toBeVisible();
+  // The toggle switches to English, left-to-right.
+  await page.getByRole("button", { name: "English" }).click();
+  await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
+  await expect(page.getByRole("heading", { name: "Nurse dashboard" })).toBeVisible();
+});
+
+// The workflow tests below assert on the English source strings.
+test.beforeEach(async ({ page }, testInfo) => {
+  if (testInfo.title.includes("Arabic")) return;
+  await page.addInitScript(() => window.localStorage.setItem("copilot.locale", "en"));
+});
 let sessionUrl = "";
 
 test("doctor signs in and sees only assigned patients and pending reviews", async ({ page }) => {

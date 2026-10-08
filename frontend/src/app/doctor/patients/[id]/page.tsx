@@ -7,6 +7,7 @@ import { ErrorNote, LabTrends, Load, optionalNumber, Section, SessionTable, Shel
 import { Button } from "@/components/ui/button";
 import { api, type LabReport, type Patient, type Prescription, type Session } from "@/lib/api";
 import { useRole } from "@/lib/auth";
+import { tr, Tx, useLocale } from "@/lib/i18n";
 import { dateOnly, withUnit } from "@/lib/format";
 import { useAction, useGet, useList } from "@/lib/hooks";
 
@@ -18,6 +19,7 @@ const orderSchema = z.object({
 });
 
 export default function DoctorPatientPage() {
+  useLocale();
   const user = useRole("doctor");
   const { id } = useParams<{ id: string }>();
   const patient = useGet<Patient>(user ? `/patients/${id}/` : null);
@@ -44,10 +46,10 @@ export default function DoctorPatientPage() {
         </Load>
         {unreleased.length > 0 && (
           <div className="mt-4 space-y-2 text-sm">
-            <p className="font-medium">Reports not yet released to the patient</p>
+            <p className="font-medium"><Tx k="Reports not yet released to the patient" /></p>
             {unreleased.map((report) => (
               <div key={report.id} className="flex flex-wrap items-center gap-3">
-                <span>Collected {dateOnly(report.collected_at)}</span>
+                <span>{tr("Collected")} {dateOnly(report.collected_at)}</span>
                 <Button
                   size="sm"
                   variant="outline"
@@ -56,7 +58,7 @@ export default function DoctorPatientPage() {
                     (await release.run(() => api.post(`/labs/${report.id}/release/`))) && labs.reload()
                   }
                 >
-                  Release to patient
+                  <Tx k="Release to patient" />
                 </Button>
               </div>
             ))}
@@ -71,9 +73,9 @@ export default function DoctorPatientPage() {
             <ul className="mb-4 space-y-1 text-sm">
               {rows.map((rx) => (
                 <li key={rx.id} className={rx.active ? "font-medium" : "text-slate-500"}>
-                  Version {rx.version}
-                  {rx.active ? " (active)" : ""}: {withUnit(rx.duration_minutes, "min")}, target UF{" "}
-                  {withUnit(rx.target_uf_ml, "mL")}, blood flow {withUnit(rx.blood_flow_ml_min, "mL/min")}, access{" "}
+                  {tr("Version")} {rx.version}
+                  {rx.active ? ` ${tr("(active)")}` : ""}: {withUnit(rx.duration_minutes, "min")} · {tr("target UF")}{" "}
+                  {withUnit(rx.target_uf_ml, "mL")} · {tr("blood flow")} {withUnit(rx.blood_flow_ml_min, "mL/min")} · {tr("access")}{" "}
                   {rx.access_type}
                 </li>
               ))}
