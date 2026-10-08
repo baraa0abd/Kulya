@@ -33,6 +33,8 @@ def exception_handler(exc: Exception, context: dict) -> Response | None:
         fallback = {403: "permission_denied", 404: "not_found", 429: "throttled"}.get(response.status_code, "error")
         code = "validation_error" if validation else getattr(exc, "default_code", fallback)
         message = "Invalid input." if validation else str(data.get("detail", "Error"))
+        if response.status_code == 404:
+            message = "Not found."  # never echo which model or id was looked up
         details = data if validation else {}
     response.data = {"error": {"code": code, "message": message, "details": details}}
     return response

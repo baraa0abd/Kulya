@@ -1,7 +1,6 @@
 """Strict validation of model output. A response that fails any check here is rejected: it is
 never stored as a successful AI result."""
 
-import json
 import re
 from typing import Any
 
@@ -86,6 +85,7 @@ FORBIDDEN = [
     "incompetent", "negligen", "malpractice", "set the machine", "adjust the machine", "set the dialysate",
 ]  # fmt: skip
 _NUMBER = re.compile(r"\d+(?:\.\d+)?")
+_TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2})?)?|\d{1,2}:\d{2}")
 Errors = list[dict[str, str]]
 
 
@@ -112,12 +112,18 @@ def _forbidden(texts: list[tuple[str, str]]) -> Errors:
 FREE_TEXT_KEYS = {"description", "reason", "text", "resolution"}
 
 
-def _without_free_text(value: Any) -> Any:
-    if isinstance(value, dict):
-        return {k: _without_free_text(v) for k, v in value.items() if k not in FREE_TEXT_KEYS}
-    if isinstance(value, list):
-        return [_without_free_text(v) for v in value]
-    return value
+def _values(node: Any, with_free_text: bool, key: str = "") -> set[float]:
+    """Every numeric value in the context (as magnitudes), optionally plus numbers quoted in free text.
+    Ids and timestamps are strings and are deliberately not a source of numbers."""
+    if isinstance(node, dict):
+        return set().union(*(_values(v, with_free_text, k) for k, v in node.items()))
+    if isinstance(node, list):
+        return set().union(*(_values(v, with_free_text, key) for v in node))
+    if isinstance(node, (int, float)) and not isinstance(node, bool):
+        return {abs(float(node))}
+    if isinstance(node, str) and with_free_text and key in FREE_TEXT_KEYS:
+        return {float(n) for n in _NUMBER.findall(node)}
+    return set()
 
 
 def validate_review(output: Any, session_id: str, record_ids: set[str], passage_ids: set[str]) -> Errors:
@@ -165,16 +171,17 @@ def validate_summary(output: Any, context: dict, record_ids: set[str]) -> Errors
                 "treatment_duration_minutes",
             )
         )
-    # No fabricated measurements. Prose may only use numbers from structured fields (metrics, vitals,
-    # readings, labs, session, prescription): a number that exists only inside free text, such as a
-    # nursing note, is not accepted as a measurement. The quoting lists may repeat any record.
-    everything = set(_NUMBER.findall(json.dumps(context, default=str)))
-    structured = set(_NUMBER.findall(json.dumps(_without_free_text(context), default=str)))
+    # No fabricated measurements. Prose may only use numbers that are actual values in structured
+    # fields (metrics, vitals, readings, labs, session, prescription). A number that exists only
+    # inside free text, such as a nursing note, is not accepted as a measurement there; the quoting
+    # lists may repeat free text. Dates and clock times are not treated as measurements.
+    structured = _values(context, with_free_text=False)
+    everything = _values(context, with_free_text=True)
     prose = [("clinical_summary", output["clinical_summary"]), ("patient_summary", output["patient_summary"])]
     quotes = [(n, t) for n in ("documented_events", "nursing_actions", "missing_information") for t in output[n]]
     for known, texts in ((structured, prose), (everything, quotes)):
         for path, text in texts:
-            invented = sorted(set(_NUMBER.findall(text)) - known)
+            invented = sorted({n for n in _NUMBER.findall(_TIMESTAMP.sub(" ", text)) if float(n) not in known})
             if invented:
                 errors.append(
                     _error("ungrounded_number", f"Numbers not present in the session records: {invented}", path)

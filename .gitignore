@@ -9,3 +9,8 @@ staticfiles/
 .idea/
 .vscode/
 .DS_Store
+node_modules/
+.next/
+test-results/
+playwright-report/
+*.tsbuildinfo

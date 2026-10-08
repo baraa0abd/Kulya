@@ -32,6 +32,7 @@ services:
       DATABASE_URL: postgres://copilot:${POSTGRES_PASSWORD:-copilot-dev-only}@db:5432/copilot
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_TASK_ALWAYS_EAGER: "false"
+      DJANGO_DEBUG: "false"
       DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,backend
     depends_on:
       db: {condition: service_healthy}
@@ -57,9 +58,10 @@ services:
       retries: 5
 
   frontend:
-    build: ./frontend
-    environment:
-      BACKEND_URL: http://backend:8000
+    build:
+      context: ./frontend
+      args:
+        BACKEND_URL: http://backend:8000
     depends_on:
       backend: {condition: service_healthy}
     ports: ["127.0.0.1:3000:3000"]

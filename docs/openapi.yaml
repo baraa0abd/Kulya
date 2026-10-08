@@ -1,0 +1,2897 @@
+openapi: 3.0.3
+info:
+  title: Dialysis Copilot API
+  version: 0.1.0
+  description: Dialysis documentation review and session summaries. Synthetic data
+    only. Not a medical device.
+paths:
+  /api/ai/reviews/:
+    get:
+      operationId: ai_reviews_list
+      description: AI documentation reviews. Only doctors read them; nurses get the
+        completeness checks.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - ai
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAIReviewList'
+          description: ''
+  /api/ai/reviews/{id}/:
+    get:
+      operationId: ai_reviews_retrieve
+      description: AI documentation reviews. Only doctors read them; nurses get the
+        completeness checks.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this ai review.
+        required: true
+      tags:
+      - ai
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIReview'
+          description: ''
+  /api/ai/reviews/completeness/:
+    get:
+      operationId: ai_reviews_completeness_retrieve
+      description: AI documentation reviews. Only doctors read them; nurses get the
+        completeness checks.
+      tags:
+      - ai
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Completeness'
+          description: ''
+  /api/ai/reviews/request/:
+    post:
+      operationId: ai_reviews_request_create
+      description: Doctor asks for a fresh analysis. Runs in the background; poll
+        the list for the result.
+      tags:
+      - ai
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SessionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SessionRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/ai/summaries/:
+    get:
+      operationId: ai_summaries_retrieve
+      tags:
+      - ai
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/ai/summaries/{id}/:
+    get:
+      operationId: ai_summaries_retrieve_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this ai summary.
+        required: true
+      tags:
+      - ai
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/ai/summaries/{id}/reject/:
+    post:
+      operationId: ai_summaries_reject_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this ai summary.
+        required: true
+      tags:
+      - ai
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AISummary'
+          description: ''
+  /api/ai/summaries/{id}/release/:
+    post:
+      operationId: ai_summaries_release_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this ai summary.
+        required: true
+      tags:
+      - ai
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AISummary'
+          description: ''
+  /api/ai/summaries/{id}/verify/:
+    post:
+      operationId: ai_summaries_verify_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this ai summary.
+        required: true
+      tags:
+      - ai
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AISummary'
+          description: ''
+  /api/ai/summaries/generate/:
+    post:
+      operationId: ai_summaries_generate_create
+      tags:
+      - ai
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SessionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SessionRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/audit/:
+    get:
+      operationId: audit_list
+      description: Read-only audit trail, limited to the reviewer's own organization.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - audit
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAuditEventList'
+          description: ''
+  /api/auth/login/:
+    post:
+      operationId: auth_login_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Login'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Login'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Login'
+          description: ''
+  /api/auth/me/:
+    get:
+      operationId: auth_me_retrieve
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+          description: ''
+  /api/auth/refresh/:
+    post:
+      operationId: auth_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/care-assignments/:
+    get:
+      operationId: care_assignments_list
+      description: Care teams. Staff see the teams of their own patients; only an
+        organization admin changes them.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - care-assignments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCareAssignmentList'
+          description: ''
+    post:
+      operationId: care_assignments_create
+      description: Care teams. Staff see the teams of their own patients; only an
+        organization admin changes them.
+      tags:
+      - care-assignments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CareAssignment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CareAssignment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CareAssignment'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CareAssignment'
+          description: ''
+  /api/care-assignments/{id}/deactivate/:
+    post:
+      operationId: care_assignments_deactivate_create
+      description: Care teams. Staff see the teams of their own patients; only an
+        organization admin changes them.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this care assignment.
+        required: true
+      tags:
+      - care-assignments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CareAssignment'
+          description: ''
+  /api/consent/:
+    get:
+      operationId: consent_list
+      description: Family sharing. A patient grants and revokes; a caregiver can only
+        see grants made to them.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - consent
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedConsentList'
+          description: ''
+    post:
+      operationId: consent_create
+      description: Family sharing. A patient grants and revokes; a caregiver can only
+        see grants made to them.
+      tags:
+      - consent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Consent'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Consent'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Consent'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consent'
+          description: ''
+  /api/consent/{id}/revoke/:
+    post:
+      operationId: consent_revoke_create
+      description: Family sharing. A patient grants and revokes; a caregiver can only
+        see grants made to them.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - consent
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consent'
+          description: ''
+  /api/device-readings/:
+    get:
+      operationId: device_readings_list
+      description: Shared behaviour for records that hang off a session. No update
+        and no delete exist.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - device-readings
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDeviceReadingList'
+          description: ''
+    post:
+      operationId: device_readings_create
+      description: Shared behaviour for records that hang off a session. No update
+        and no delete exist.
+      tags:
+      - device-readings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceReading'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DeviceReading'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DeviceReading'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceReading'
+          description: ''
+  /api/device-readings/{id}/:
+    get:
+      operationId: device_readings_retrieve
+      description: Shared behaviour for records that hang off a session. No update
+        and no delete exist.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this device reading.
+        required: true
+      tags:
+      - device-readings
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceReading'
+          description: ''
+  /api/doctor/feedback/:
+    get:
+      operationId: doctor_feedback_list
+      description: Doctors write feedback or ask for clarification; the session's
+        nurses can read it.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - doctor
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDoctorFeedbackList'
+          description: ''
+    post:
+      operationId: doctor_feedback_create
+      description: Doctors write feedback or ask for clarification; the session's
+        nurses can read it.
+      tags:
+      - doctor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoctorFeedback'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DoctorFeedback'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DoctorFeedback'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoctorFeedback'
+          description: ''
+  /api/doctor/review-tasks/:
+    get:
+      operationId: doctor_review_tasks_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - doctor
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReviewTaskList'
+          description: ''
+  /api/doctor/review-tasks/{id}/complete/:
+    post:
+      operationId: doctor_review_tasks_complete_create
+      description: Close a task without written feedback (normal physician review
+        also works with no AI).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this review task.
+        required: true
+      tags:
+      - doctor
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewTask'
+          description: ''
+  /api/health/:
+    get:
+      operationId: health_retrieve
+      tags:
+      - health
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/labs/:
+    get:
+      operationId: labs_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - labs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLaboratoryReportList'
+          description: ''
+    post:
+      operationId: labs_create
+      tags:
+      - labs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LaboratoryReport'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LaboratoryReport'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LaboratoryReport'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LaboratoryReport'
+          description: ''
+  /api/labs/{id}/:
+    get:
+      operationId: labs_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this laboratory report.
+        required: true
+      tags:
+      - labs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LaboratoryReport'
+          description: ''
+  /api/labs/{id}/release/:
+    post:
+      operationId: labs_release_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this laboratory report.
+        required: true
+      tags:
+      - labs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LaboratoryReport'
+          description: ''
+  /api/notifications/:
+    get:
+      operationId: notifications_list
+      description: A user's own inbox. There is no way to address another user's notifications.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedNotificationList'
+          description: ''
+  /api/notifications/{id}/read/:
+    post:
+      operationId: notifications_read_create
+      description: A user's own inbox. There is no way to address another user's notifications.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+  /api/notifications/read-all/:
+    post:
+      operationId: notifications_read_all_create
+      description: A user's own inbox. There is no way to address another user's notifications.
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/nursing-actions/:
+    get:
+      operationId: nursing_actions_list
+      description: POST /{id}/amend/ adds a corrected copy that points at the original.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - nursing-actions
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedNursingActionList'
+          description: ''
+    post:
+      operationId: nursing_actions_create
+      description: POST /{id}/amend/ adds a corrected copy that points at the original.
+      tags:
+      - nursing-actions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NursingAction'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NursingAction'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NursingAction'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NursingAction'
+          description: ''
+  /api/nursing-actions/{id}/:
+    get:
+      operationId: nursing_actions_retrieve
+      description: POST /{id}/amend/ adds a corrected copy that points at the original.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this nursing action.
+        required: true
+      tags:
+      - nursing-actions
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NursingAction'
+          description: ''
+  /api/nursing-actions/{id}/amend/:
+    post:
+      operationId: nursing_actions_amend_create
+      description: POST /{id}/amend/ adds a corrected copy that points at the original.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this nursing action.
+        required: true
+      tags:
+      - nursing-actions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NursingAction'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NursingAction'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NursingAction'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NursingAction'
+          description: ''
+  /api/nursing-notes/:
+    get:
+      operationId: nursing_notes_list
+      description: POST /{id}/amend/ adds a corrected copy that points at the original.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - nursing-notes
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedNursingNoteList'
+          description: ''
+    post:
+      operationId: nursing_notes_create
+      description: POST /{id}/amend/ adds a corrected copy that points at the original.
+      tags:
+      - nursing-notes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NursingNote'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NursingNote'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NursingNote'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NursingNote'
+          description: ''
+  /api/nursing-notes/{id}/:
+    get:
+      operationId: nursing_notes_retrieve
+      description: POST /{id}/amend/ adds a corrected copy that points at the original.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this nursing note.
+        required: true
+      tags:
+      - nursing-notes
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NursingNote'
+          description: ''
+  /api/nursing-notes/{id}/amend/:
+    post:
+      operationId: nursing_notes_amend_create
+      description: POST /{id}/amend/ adds a corrected copy that points at the original.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this nursing note.
+        required: true
+      tags:
+      - nursing-notes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NursingNote'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NursingNote'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NursingNote'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NursingNote'
+          description: ''
+  /api/patients/:
+    get:
+      operationId: patients_retrieve
+      tags:
+      - patients
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/patients/{id}/:
+    get:
+      operationId: patients_retrieve_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this patient.
+        required: true
+      tags:
+      - patients
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/prescriptions/:
+    get:
+      operationId: prescriptions_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - prescriptions
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPrescriptionList'
+          description: ''
+    post:
+      operationId: prescriptions_create
+      tags:
+      - prescriptions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Prescription'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Prescription'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Prescription'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prescription'
+          description: ''
+  /api/session-events/:
+    get:
+      operationId: session_events_list
+      description: Shared behaviour for records that hang off a session. No update
+        and no delete exist.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - session-events
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSessionEventList'
+          description: ''
+    post:
+      operationId: session_events_create
+      description: Shared behaviour for records that hang off a session. No update
+        and no delete exist.
+      tags:
+      - session-events
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionEvent'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SessionEvent'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SessionEvent'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionEvent'
+          description: ''
+  /api/session-events/{id}/:
+    get:
+      operationId: session_events_retrieve
+      description: Shared behaviour for records that hang off a session. No update
+        and no delete exist.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this session event.
+        required: true
+      tags:
+      - session-events
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionEvent'
+          description: ''
+  /api/session-events/{id}/resolve/:
+    post:
+      operationId: session_events_resolve_create
+      description: Shared behaviour for records that hang off a session. No update
+        and no delete exist.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this session event.
+        required: true
+      tags:
+      - session-events
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveEvent'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResolveEvent'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResolveEvent'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionEvent'
+          description: ''
+  /api/sessions/:
+    get:
+      operationId: sessions_retrieve
+      tags:
+      - sessions
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: sessions_create
+      tags:
+      - sessions
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          description: No response body
+  /api/sessions/{id}/:
+    get:
+      operationId: sessions_retrieve_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this dialysis session.
+        required: true
+      tags:
+      - sessions
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/sessions/{id}/complete/:
+    post:
+      operationId: sessions_complete_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this dialysis session.
+        required: true
+      tags:
+      - sessions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteSession'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CompleteSession'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CompleteSession'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+          description: ''
+  /api/sessions/{id}/start/:
+    post:
+      operationId: sessions_start_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this dialysis session.
+        required: true
+      tags:
+      - sessions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartSession'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StartSession'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StartSession'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+          description: ''
+  /api/vitals/:
+    get:
+      operationId: vitals_list
+      description: Staff record and read session vitals. A patient may add home measurements
+        and read only those.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - vitals
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedVitalSignList'
+          description: ''
+    post:
+      operationId: vitals_create
+      description: Staff record and read session vitals. A patient may add home measurements
+        and read only those.
+      tags:
+      - vitals
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VitalSign'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VitalSign'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VitalSign'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VitalSign'
+          description: ''
+components:
+  schemas:
+    AIReview:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        session:
+          type: string
+          format: uuid
+          readOnly: true
+        trigger:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AIReviewStatusEnum'
+          readOnly: true
+        label:
+          type: string
+          readOnly: true
+        rule_findings:
+          readOnly: true
+        protocol_passages:
+          readOnly: true
+        output:
+          readOnly: true
+          nullable: true
+        ai_error:
+          readOnly: true
+        model_name:
+          type: string
+          readOnly: true
+        prompt_version:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        reviewed_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - ai_error
+      - created_at
+      - id
+      - label
+      - model_name
+      - output
+      - prompt_version
+      - protocol_passages
+      - reviewed_at
+      - reviewed_by
+      - rule_findings
+      - session
+      - status
+      - trigger
+    AIReviewStatusEnum:
+      enum:
+      - processing
+      - pending_review
+      - ai_unavailable
+      - reviewed
+      type: string
+      description: |-
+        * `processing` - Processing
+        * `pending_review` - Pending Review
+        * `ai_unavailable` - Ai Unavailable
+        * `reviewed` - Reviewed
+    AISummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        session:
+          type: string
+          format: uuid
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AISummaryStatusEnum'
+          readOnly: true
+        label:
+          type: string
+          readOnly: true
+        metrics:
+          readOnly: true
+        output:
+          readOnly: true
+          nullable: true
+        ai_error:
+          readOnly: true
+        model_name:
+          type: string
+          readOnly: true
+        prompt_version:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        verified_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        verified_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        released:
+          type: boolean
+          readOnly: true
+        released_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - ai_error
+      - created_at
+      - id
+      - label
+      - metrics
+      - model_name
+      - output
+      - prompt_version
+      - released
+      - released_at
+      - session
+      - status
+      - verified_at
+      - verified_by
+      - version
+    AISummaryStatusEnum:
+      enum:
+      - processing
+      - unverified
+      - verified
+      - rejected
+      - ai_unavailable
+      type: string
+      description: |-
+        * `processing` - Processing
+        * `unverified` - Unverified
+        * `verified` - Verified
+        * `rejected` - Rejected
+        * `ai_unavailable` - Ai Unavailable
+    AccessTypeEnum:
+      enum:
+      - AVF
+      - AVG
+      - CVC
+      type: string
+      description: |-
+        * `AVF` - Avf
+        * `AVG` - Avg
+        * `CVC` - Cvc
+    ActionTypeEnum:
+      enum:
+      - medication_administration
+      - uf_adjustment
+      - treatment_pause
+      - fluid_bolus
+      - access_care
+      - position_change
+      - physician_notified
+      - other
+      type: string
+      description: |-
+        * `medication_administration` - Medication
+        * `uf_adjustment` - Uf Adjustment
+        * `treatment_pause` - Treatment Pause
+        * `fluid_bolus` - Fluid Bolus
+        * `access_care` - Access Care
+        * `position_change` - Position Change
+        * `physician_notified` - Physician Notified
+        * `other` - Other
+    AuditEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        actor:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        actor_username:
+          type: string
+          readOnly: true
+        action:
+          type: string
+          readOnly: true
+        object_type:
+          type: string
+          readOnly: true
+        object_id:
+          type: string
+          readOnly: true
+        patient_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+      required:
+      - action
+      - actor
+      - actor_username
+      - created_at
+      - id
+      - object_id
+      - object_type
+      - patient_id
+    CareAssignment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        patient:
+          type: string
+          format: uuid
+        professional:
+          type: string
+          format: uuid
+        professional_name:
+          type: string
+          readOnly: true
+        professional_role:
+          type: string
+          readOnly: true
+        active:
+          type: boolean
+        starts_at:
+          type: string
+          format: date-time
+          readOnly: true
+        ends_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - id
+      - patient
+      - professional
+      - professional_name
+      - professional_role
+      - starts_at
+    CompleteSession:
+      type: object
+      properties:
+        post_weight_kg:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,1})?$
+        uf_volume_ml:
+          type: integer
+          maximum: 10000
+          minimum: 0
+    Completeness:
+      type: object
+      description: 'What a nurse sees: the deterministic documentation checks only,
+        never the AI assessment.'
+      properties:
+        session:
+          type: string
+          format: uuid
+        rule_findings:
+          type: array
+          items: {}
+        checked_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - checked_at
+      - rule_findings
+      - session
+    Consent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        patient:
+          type: string
+          format: uuid
+          readOnly: true
+        patient_name:
+          type: string
+          readOnly: true
+        caregiver_username:
+          type: string
+          writeOnly: true
+        caregiver_name:
+          type: string
+          readOnly: true
+        scopes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScopesEnum'
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        revoked_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - caregiver_name
+      - caregiver_username
+      - created_at
+      - id
+      - patient
+      - patient_name
+      - revoked_at
+      - scopes
+    DeviceReading:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        session:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/DeviceReadingKindEnum'
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+        unit:
+          type: string
+        source:
+          allOf:
+          - $ref: '#/components/schemas/SourceEnum'
+          readOnly: true
+        source_id:
+          type: string
+          readOnly: true
+        verification_status:
+          allOf:
+          - $ref: '#/components/schemas/VerificationStatusEnum'
+          readOnly: true
+        recorded_at:
+          type: string
+          format: date-time
+        recorded_by:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - kind
+      - recorded_at
+      - recorded_by
+      - session
+      - source
+      - source_id
+      - value
+      - verification_status
+    DeviceReadingKindEnum:
+      enum:
+      - blood_flow_rate
+      - dialysate_flow_rate
+      - venous_pressure
+      - arterial_pressure
+      - uf_rate
+      - uf_removed
+      type: string
+      description: |-
+        * `blood_flow_rate` - Blood Flow
+        * `dialysate_flow_rate` - Dialysate Flow
+        * `venous_pressure` - Venous Pressure
+        * `arterial_pressure` - Arterial Pressure
+        * `uf_rate` - Uf Rate
+        * `uf_removed` - Uf Removed
+    DoctorFeedback:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        session:
+          type: string
+          format: uuid
+        author:
+          type: string
+          format: uuid
+          readOnly: true
+        author_name:
+          type: string
+          readOnly: true
+        kind:
+          $ref: '#/components/schemas/DoctorFeedbackKindEnum'
+        text:
+          type: string
+        nursing_action:
+          type: string
+          format: uuid
+          nullable: true
+        ai_review:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - author
+      - author_name
+      - created_at
+      - id
+      - session
+      - text
+    DoctorFeedbackKindEnum:
+      enum:
+      - feedback
+      - clarification_request
+      type: string
+      description: |-
+        * `feedback` - Feedback
+        * `clarification_request` - Clarification
+    EventTypeEnum:
+      enum:
+      - hypotension
+      - cramps
+      - clotting
+      - machine_alarm
+      - access_issue
+      - symptom
+      - incident
+      - other
+      type: string
+      description: |-
+        * `hypotension` - Hypotension
+        * `cramps` - Cramps
+        * `clotting` - Clotting
+        * `machine_alarm` - Machine Alarm
+        * `access_issue` - Access Issue
+        * `symptom` - Symptom
+        * `incident` - Incident
+        * `other` - Other
+    LaboratoryReport:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        patient:
+          type: string
+          format: uuid
+        collected_at:
+          type: string
+          format: date-time
+        reported_at:
+          type: string
+          format: date-time
+        source:
+          type: string
+          maxLength: 120
+        released_to_patient:
+          type: boolean
+          readOnly: true
+        released_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/LaboratoryResult'
+      required:
+      - collected_at
+      - id
+      - patient
+      - released_at
+      - released_to_patient
+      - reported_at
+      - results
+      - source
+    LaboratoryResult:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        analyte:
+          type: string
+          maxLength: 60
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,7}(?:\.\d{0,3})?$
+        unit:
+          type: string
+          maxLength: 20
+        reference_low:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,7}(?:\.\d{0,3})?$
+          nullable: true
+        reference_high:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,7}(?:\.\d{0,3})?$
+          nullable: true
+      required:
+      - analyte
+      - id
+      - unit
+      - value
+    Login:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - password
+      - username
+    Me:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+        display_name:
+          type: string
+          readOnly: true
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          readOnly: true
+        organization:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+      required:
+      - display_name
+      - id
+      - organization
+      - role
+      - username
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        patient:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        session:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        read_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - kind
+      - patient
+      - read_at
+      - session
+      - title
+    NursingAction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        session:
+          type: string
+          format: uuid
+        author:
+          type: string
+          format: uuid
+          readOnly: true
+        author_name:
+          type: string
+          readOnly: true
+        action_type:
+          $ref: '#/components/schemas/ActionTypeEnum'
+        description:
+          type: string
+        reason:
+          type: string
+        order:
+          type: string
+          format: uuid
+          nullable: true
+        performed_at:
+          type: string
+          format: date-time
+        amends:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - action_type
+      - amends
+      - author
+      - author_name
+      - created_at
+      - description
+      - id
+      - performed_at
+      - session
+    NursingNote:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        session:
+          type: string
+          format: uuid
+        author:
+          type: string
+          format: uuid
+          readOnly: true
+        author_name:
+          type: string
+          readOnly: true
+        text:
+          type: string
+        amends:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - amends
+      - author
+      - author_name
+      - created_at
+      - id
+      - session
+      - text
+    PaginatedAIReviewList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AIReview'
+    PaginatedAuditEventList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditEvent'
+    PaginatedCareAssignmentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CareAssignment'
+    PaginatedConsentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Consent'
+    PaginatedDeviceReadingList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeviceReading'
+    PaginatedDoctorFeedbackList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DoctorFeedback'
+    PaginatedLaboratoryReportList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/LaboratoryReport'
+    PaginatedNotificationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+    PaginatedNursingActionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/NursingAction'
+    PaginatedNursingNoteList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/NursingNote'
+    PaginatedPrescriptionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Prescription'
+    PaginatedReviewTaskList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReviewTask'
+    PaginatedSessionEventList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionEvent'
+    PaginatedVitalSignList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/VitalSign'
+    PhaseEnum:
+      enum:
+      - pre
+      - intra
+      - post
+      - home
+      type: string
+      description: |-
+        * `pre` - Pre
+        * `intra` - Intra
+        * `post` - Post
+        * `home` - Home
+    Prescription:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        patient:
+          type: string
+          format: uuid
+        version:
+          type: integer
+          readOnly: true
+        prescribed_by:
+          type: string
+          format: uuid
+          readOnly: true
+        duration_minutes:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        blood_flow_ml_min:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        dialysate_flow_ml_min:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        target_uf_ml:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        access_type:
+          $ref: '#/components/schemas/AccessTypeEnum'
+        active:
+          type: boolean
+          readOnly: true
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - access_type
+      - active
+      - created_at
+      - duration_minutes
+      - id
+      - patient
+      - prescribed_by
+      - version
+    ResolveEvent:
+      type: object
+      properties:
+        resolution:
+          type: string
+      required:
+      - resolution
+    ReviewTask:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        session:
+          type: string
+          format: uuid
+          readOnly: true
+        session_date:
+          type: string
+          format: date-time
+          readOnly: true
+        patient:
+          type: string
+          format: uuid
+          readOnly: true
+        patient_name:
+          type: string
+          readOnly: true
+        ai_review:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        review_status:
+          type: string
+          readOnly: true
+        finding_count:
+          type: integer
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ReviewTaskStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        completed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - ai_review
+      - completed_at
+      - created_at
+      - finding_count
+      - id
+      - patient
+      - patient_name
+      - review_status
+      - session
+      - session_date
+      - status
+    ReviewTaskStatusEnum:
+      enum:
+      - open
+      - done
+      type: string
+      description: |-
+        * `open` - Open
+        * `done` - Done
+    RoleEnum:
+      enum:
+      - doctor
+      - nurse
+      - patient
+      - family
+      - org_admin
+      - sys_admin
+      - auditor
+      - service
+      type: string
+      description: |-
+        * `doctor` - Doctor
+        * `nurse` - Nurse
+        * `patient` - Patient
+        * `family` - Family
+        * `org_admin` - Org Admin
+        * `sys_admin` - Sys Admin
+        * `auditor` - Auditor
+        * `service` - Service
+    ScopesEnum:
+      enum:
+      - summaries
+      - appointments
+      - labs
+      type: string
+      description: |-
+        * `summaries` - Summaries
+        * `appointments` - Appointments
+        * `labs` - Labs
+    Session:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        patient:
+          type: string
+          format: uuid
+        patient_name:
+          type: string
+          readOnly: true
+        patient_mrn:
+          type: string
+          readOnly: true
+        prescription:
+          type: string
+          format: uuid
+          readOnly: true
+        prescribed_duration_minutes:
+          type: integer
+          readOnly: true
+        device:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/SessionStatusEnum'
+          readOnly: true
+        scheduled_start:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        ended_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        pre_weight_kg:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,1})?$
+          readOnly: true
+          nullable: true
+        post_weight_kg:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,1})?$
+          readOnly: true
+          nullable: true
+        uf_volume_ml:
+          type: integer
+          readOnly: true
+          nullable: true
+      required:
+      - ended_at
+      - id
+      - patient
+      - patient_mrn
+      - patient_name
+      - post_weight_kg
+      - pre_weight_kg
+      - prescribed_duration_minutes
+      - prescription
+      - scheduled_start
+      - started_at
+      - status
+      - uf_volume_ml
+    SessionEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        session:
+          type: string
+          format: uuid
+        event_type:
+          $ref: '#/components/schemas/EventTypeEnum'
+        description:
+          type: string
+        occurred_at:
+          type: string
+          format: date-time
+        reported_by:
+          type: string
+          format: uuid
+          readOnly: true
+        resolution:
+          type: string
+          readOnly: true
+        resolved_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        resolved_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - description
+      - event_type
+      - id
+      - occurred_at
+      - reported_by
+      - resolution
+      - resolved_at
+      - resolved_by
+      - session
+    SessionRequest:
+      type: object
+      properties:
+        session:
+          type: string
+          format: uuid
+      required:
+      - session
+    SessionStatusEnum:
+      enum:
+      - scheduled
+      - in_progress
+      - completed
+      - cancelled
+      type: string
+      description: |-
+        * `scheduled` - Scheduled
+        * `in_progress` - In Progress
+        * `completed` - Completed
+        * `cancelled` - Cancelled
+    SourceEnum:
+      enum:
+      - measured
+      - device
+      - patient_reported
+      - calculated
+      type: string
+      description: |-
+        * `measured` - Measured
+        * `device` - Device
+        * `patient_reported` - Patient Reported
+        * `calculated` - Calculated
+    StartSession:
+      type: object
+      properties:
+        pre_weight_kg:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,1})?$
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          writeOnly: true
+      required:
+      - access
+      - refresh
+    VerificationStatusEnum:
+      enum:
+      - unverified
+      - verified
+      type: string
+      description: |-
+        * `unverified` - Unverified
+        * `verified` - Verified
+    VitalSign:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        patient:
+          type: string
+          format: uuid
+          readOnly: true
+        session:
+          type: string
+          format: uuid
+          nullable: true
+        kind:
+          $ref: '#/components/schemas/VitalSignKindEnum'
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,5}(?:\.\d{0,2})?$
+        unit:
+          type: string
+        phase:
+          $ref: '#/components/schemas/PhaseEnum'
+        source:
+          allOf:
+          - $ref: '#/components/schemas/SourceEnum'
+          readOnly: true
+        verification_status:
+          allOf:
+          - $ref: '#/components/schemas/VerificationStatusEnum'
+          readOnly: true
+        recorded_at:
+          type: string
+          format: date-time
+        recorded_by:
+          type: string
+          format: uuid
+          readOnly: true
+        amends:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - amends
+      - created_at
+      - id
+      - kind
+      - patient
+      - phase
+      - recorded_at
+      - recorded_by
+      - source
+      - value
+      - verification_status
+    VitalSignKindEnum:
+      enum:
+      - systolic_bp
+      - diastolic_bp
+      - heart_rate
+      - temperature
+      - spo2
+      - weight
+      type: string
+      description: |-
+        * `systolic_bp` - Sbp
+        * `diastolic_bp` - Dbp
+        * `heart_rate` - Heart Rate
+        * `temperature` - Temperature
+        * `spo2` - Spo2
+        * `weight` - Weight
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
