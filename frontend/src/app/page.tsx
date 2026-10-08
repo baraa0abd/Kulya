@@ -12,5 +12,5 @@ export default function Index() {
   useEffect(() => {
     if (ready) router.replace(user ? HOME[user.role] : "/login/");
   }, [ready, user, router]);
-  return <p className="p-6 text-sm text-slate-500">…</p>;
+  return <p className="p-6 text-sm text-ink-3">…</p>;
 }

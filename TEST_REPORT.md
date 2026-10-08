@@ -58,6 +58,12 @@ Redis and visible on the next poll (2 s).
 dashboard headings are Arabic, and the toggle switches to English left-to-right (1 browser test,
 1 unit test). The other browser tests run with the interface switched to English.
 
+**Interface redesign** — after the design system was applied, all frontend checks were re-run
+(10 unit tests, 7 browser tests, lint, type-check, build) with no change to the backend. Screens
+reviewed from full-size screenshots: nurse dashboard (Arabic), doctor dashboard and session review
+(English), patient dashboard (Arabic). Not visually reviewed: the nurse session screen, the doctor
+patient page, the family view, the sign-in page after restyling, and any phone or tablet width.
+
 ## Defects found by testing and fixed
 
 - Row locks combined with a nullable join failed on PostgreSQL (`FOR UPDATE` on an outer join).
@@ -67,6 +73,9 @@ dashboard headings are Arabic, and the toggle switches to English left-to-right 
   values in structured fields only. This showed up as an intermittent test failure.
 - 404 responses echoed the model name that was looked up.
 - A circular import between the default permission class and DRF views.
+- A hydration mismatch when the saved language was English (the pages sat inside a Suspense
+  boundary and hydrated after the language switch).
+- In Arabic, values with units rendered reversed ("min 240") and charts were mirrored.
 
 ## Not tested
 

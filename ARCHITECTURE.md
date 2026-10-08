@@ -109,6 +109,14 @@ Next.js App Router, TypeScript strict, Tailwind, shadcn/ui, Recharts, React Hook
 
 Route guards in the browser are navigation convenience only; the API enforces access.
 
+Visual design: the "Dialysis Clinical Intelligence" design system. Tokens and component styling
+live in `src/app/globals.css` (petrol-blue primary, jade for stable states, periwinkle reserved for
+AI content, 1px borders, 4px controls, 8px cards, Inter + Noto Sans Arabic, tabular numerals). The
+frame is a side rail with section navigation plus a sticky top bar; dashboards open with a row of
+key figures; session screens use a main column with an AI / review rail. Every figure and
+navigation item is backed by real data or a real section: the design mock-ups' machine telemetry,
+chair numbers and phone lines are not shown because the system has no such data.
+
 Language: `src/lib/i18n.tsx` holds an English-to-Arabic dictionary keyed by the English source
 string. Arabic (RTL) is the default; the choice is kept in `localStorage`. Missing entries fall
 back to English. Dates use Arabic month names with Latin digits; values and units are never

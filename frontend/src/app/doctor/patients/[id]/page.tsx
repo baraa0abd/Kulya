@@ -1,9 +1,10 @@
 "use client";
 
+import { ClipboardList, FlaskConical, History } from "lucide-react";
 import { useParams } from "next/navigation";
 import { z } from "zod";
 
-import { ErrorNote, LabTrends, Load, optionalNumber, Section, SessionTable, Shell, ZForm } from "@/components/app";
+import { ErrorNote, LabTrends, Load, type NavItem, optionalNumber, Section, SessionTable, Shell, ZForm } from "@/components/app";
 import { Button } from "@/components/ui/button";
 import { api, type LabReport, type Patient, type Prescription, type Session } from "@/lib/api";
 import { useRole } from "@/lib/auth";
@@ -18,6 +19,12 @@ const orderSchema = z.object({
   access_type: z.enum(["AVF", "AVG", "CVC"]),
 });
 
+const NAV: NavItem[] = [
+  { href: "#history", label: "Dialysis session history", icon: History },
+  { href: "#labs", label: "Laboratory trends", icon: FlaskConical },
+  { href: "#orders", label: "Dialysis orders", icon: ClipboardList },
+];
+
 export default function DoctorPatientPage() {
   useLocale();
   const user = useRole("doctor");
@@ -30,14 +37,16 @@ export default function DoctorPatientPage() {
   if (!user) return null;
   const unreleased = labs.data?.filter((r) => !r.released_to_patient) ?? [];
   return (
-    <Shell title={patient.data ? `${patient.data.full_name} (${patient.data.mrn})` : "Patient"} back="/doctor/">
-      <Section title="Dialysis session history">
+    <Shell title={patient.data ? `${patient.data.full_name} (${patient.data.mrn})` : "Patient"} back="/doctor/" nav={NAV}>
+      <Section id="history" icon={History} title="Dialysis session history">
         <Load from={sessions} empty="No sessions recorded.">
           {(rows) => <SessionTable sessions={rows} hrefFor={(s) => `/doctor/sessions/${s.id}/`} />}
         </Load>
       </Section>
 
       <Section
+        id="labs"
+        icon={FlaskConical}
         title="Laboratory trends"
         description="Values are shown exactly as reported by the laboratory, with their units."
       >
@@ -67,12 +76,12 @@ export default function DoctorPatientPage() {
         )}
       </Section>
 
-      <Section title="Dialysis orders" description="A new order becomes the active version; earlier versions are kept.">
+      <Section id="orders" icon={ClipboardList} title="Dialysis orders" description="A new order becomes the active version; earlier versions are kept.">
         <Load from={orders} empty="No dialysis order on file.">
           {(rows) => (
             <ul className="mb-4 space-y-1 text-sm">
               {rows.map((rx) => (
-                <li key={rx.id} className={rx.active ? "font-medium" : "text-slate-500"}>
+                <li key={rx.id} className={rx.active ? "font-medium" : "text-ink-3"}>
                   {tr("Version")} {rx.version}
                   {rx.active ? ` ${tr("(active)")}` : ""}: {withUnit(rx.duration_minutes, "min")} · {tr("target UF")}{" "}
                   {withUnit(rx.target_uf_ml, "mL")} · {tr("blood flow")} {withUnit(rx.blood_flow_ml_min, "mL/min")} · {tr("access")}{" "}
