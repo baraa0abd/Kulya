@@ -5,6 +5,7 @@ import type { NextConfig } from "next";
 const backend = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
 
 const nextConfig: NextConfig = {
+  distDir: process.env.E2E_DIST_DIR ?? ".next",
   output: "standalone",
   trailingSlash: true, // Django REST endpoints end in a slash
   async rewrites() {

@@ -1,17 +1,19 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
+import { AR_EXTRA, arabicRules } from "./arabic";
+import { AR_CATALOG } from "./arabic-catalog";
 
 /**
  * Arabic-first interface. Source strings are English; `tr()` returns the Arabic text when the
  * locale is "ar" (the default) and the source string otherwise. A string with no entry falls back
- * to English, so nothing ever renders empty. Text that comes from the server (record content,
- * AI drafts, finding descriptions, error messages) is shown as stored and is not translated here.
+ * to its source. System templates and bundled demo content also have Arabic counterparts.
+ * Unrecognized free text remains the original record; localization never rewrites stored data.
  */
 export type Locale = "ar" | "en";
 const STORAGE_KEY = "kulya.locale";
 
-const AR: Record<string, string> = {
+const BASE_AR: Record<string, string> = {
   // --- shell, auth ---
   "Kulya": "كُلية",
   "Synthetic demonstration data": "بيانات تجريبية مصطنعة",
@@ -528,6 +530,42 @@ const AR: Record<string, string> = {
   "A nurse referred a nutrition concern": "أحال التمريض ملاحظة عن التغذية",
 };
 
+const AR = { ...BASE_AR, ...AR_EXTRA, ...AR_CATALOG };
+const rules = arabicRules(text => translateArabic(text));
+
+function translateArabic(text: string, depth = 0): string {
+  if (Object.hasOwn(AR, text)) return AR[text];
+  if (depth > 8 || !/[a-z]/i.test(text)) return text;
+  const normalized = text.replaceAll("_", " ").replace(/^./, c => c.toUpperCase());
+  if (Object.hasOwn(AR, normalized)) return AR[normalized];
+  for (const [pattern, render] of rules) {
+    const match = text.match(pattern);
+    if (match) return render(...match.slice(1));
+  }
+  if (text.includes(" · ")) return text.split(" · ").map(part => translateArabic(part, depth + 1)).join(" · ");
+  // Keep complete field-error templates together before splitting narrative sentences.
+  const colon = text.indexOf(": ");
+  if (colon > 0) {
+    const prefix = text.slice(0, colon);
+    const translated = translateArabic(prefix, depth + 1);
+    if (translated !== prefix) return `${translated}: ${translateArabic(text.slice(colon + 2), depth + 1)}`;
+  }
+  // Generated narratives are composed of independently translated system sentences.
+  const sentences = text.split(/(?<=[.!?])\s+(?=[A-Za-z0-9])/);
+  if (sentences.length > 1) return sentences.map(sentence => translateArabic(sentence, depth + 1)).join(" ");
+  const parenthetical = text.match(/^(.+) \(([^()]+)\)$/);
+  if (parenthetical) {
+    const prefix = translateArabic(parenthetical[1], depth + 1);
+    if (prefix !== parenthetical[1]) return `${prefix} (${translateArabic(parenthetical[2], depth + 1)})`;
+  }
+  return text;
+}
+
+/** Used by coverage checks so new UI copy cannot silently fall back to English. */
+export function hasArabicTranslation(text: string): boolean {
+  return !/[a-z]/i.test(text) || translateArabic(text) !== text;
+}
+
 let current: Locale = "ar";
 const listeners = new Set<() => void>();
 
@@ -540,6 +578,9 @@ export function setLocale(locale: Locale, persist = true) {
   if (typeof document !== "undefined") {
     document.documentElement.lang = locale;
     document.documentElement.dir = locale === "ar" ? "rtl" : "ltr";
+    document.title = locale === "ar" ? "كُلية" : "Kulya";
+    const description = document.querySelector('meta[name="description"]');
+    description?.setAttribute("content", tr("Dialysis documentation review and session summaries. Synthetic demonstration data only."));
     if (persist) {
       try {
         window.localStorage.setItem(STORAGE_KEY, locale); // a per-viewer preference, nothing sensitive
@@ -553,7 +594,7 @@ export function setLocale(locale: Locale, persist = true) {
 
 /** Translate a source string for the current locale. */
 export function tr(text: string): string {
-  return current === "ar" ? (AR[text] ?? text) : text;
+  return current === "ar" ? translateArabic(text) : text;
 }
 
 function subscribe(listener: () => void) {

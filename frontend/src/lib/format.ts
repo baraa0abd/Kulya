@@ -16,11 +16,11 @@ export const label = (code: string) => {
 
 /**
  * A value is always shown with its unit; a missing value is shown as missing, never as zero.
- * In Arabic the pair is wrapped in left-to-right isolates so it reads "240 min", not "min 240".
+ * Arabic unit labels are isolated with their original numeric values to keep the pair together.
  */
 export const withUnit = (value: string | number | null | undefined, unit: string) => {
   if (value === null || value === undefined || value === "") return tr("Not recorded");
-  const text = `${Number(value)} ${unit}`;
+  const text = `${Number(value)} ${tr(unit)}`;
   return getLocale() === "ar" ? `⁦${text}⁩` : text;
 };
 

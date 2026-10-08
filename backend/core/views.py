@@ -10,7 +10,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .models import AuditEvent, Role, User
-from .permissions import EVERYONE
+from .permissions import ALL_ROLES
 
 
 class LoginSerializer(TokenObtainPairSerializer):
@@ -35,7 +35,7 @@ class MeSerializer(serializers.ModelSerializer):
 
 
 class MeView(APIView):
-    read_roles = (*EVERYONE, Role.ORG_ADMIN, Role.AUDITOR, Role.SYS_ADMIN)
+    read_roles = (*ALL_ROLES, Role.ORG_ADMIN, Role.AUDITOR, Role.SYS_ADMIN)
 
     @extend_schema(responses=MeSerializer)
     def get(self, request: Request) -> Response:

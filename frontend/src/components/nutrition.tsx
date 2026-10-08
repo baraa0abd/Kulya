@@ -47,9 +47,10 @@ import {
   type Recommendation,
 } from "@/lib/api";
 import { HOME, useRole } from "@/lib/auth";
-import { dateOnly, dateTime, label, withUnit } from "@/lib/format";
+import { dateOnly, dateTime, label, today, withUnit } from "@/lib/format";
 import { useAction, useGet } from "@/lib/hooks";
 import { getLocale, tr, Tx, useLocale } from "@/lib/i18n";
+import { mealAmount } from "@/lib/meal-input";
 
 const NUTRIENT: Record<NutrientKey, [name: string, unit: string]> = {
   energy_kcal: ["Energy", "kcal"],
@@ -63,7 +64,7 @@ const NUTRIENT: Record<NutrientKey, [name: string, unit: string]> = {
 const MEAL_TYPES = ["breakfast", "lunch", "dinner", "snack"];
 const UNIT_NAME: Record<string, string> = { g: "grams", ml: "millilitres" };
 const unitName = (unit: string) => tr(UNIT_NAME[unit] ?? unit);
-const localName = (names: Record<string, string>, fallback: string) => names[getLocale()] ?? fallback;
+const localName = (names: Record<string, string>, fallback: string) => names[getLocale()] ?? tr(fallback);
 
 /** Shown wherever nutrient numbers or meal ideas appear. */
 function Disclaimer() {
@@ -76,7 +77,7 @@ function Disclaimer() {
 }
 
 /** Nutrient figures with units. A value that is not available says so; it is never shown as 0. */
-export function NutrientTray({ values, dense = false }: { values: Nutrients | null; dense?: boolean }) {
+export function NutrientTray({ values, dense = false, coverage }: { values: Nutrients | null; dense?: boolean; coverage?: Record<NutrientKey, number> }) {
   useLocale();
   return (
     <dl className={`grid grid-cols-2 gap-2 sm:grid-cols-4 ${dense ? "" : "xl:grid-cols-7"}`}>
@@ -89,6 +90,7 @@ export function NutrientTray({ values, dense = false }: { values: Nutrients | nu
             <dd className={`mt-0.5 font-semibold ${value === null ? "text-sm text-warn" : "text-lg text-ink"}`}>
               {value === null ? tr("Not available") : withUnit(value, unit)}
             </dd>
+            {coverage && <p className="mt-1 text-xs text-ink-3">{tr("Complete recorded days")}: {coverage[key]}</p>}
           </div>
         );
       })}
@@ -104,7 +106,8 @@ function DiaryFacts({ summary }: { summary: DiarySummary }) {
         {tr("Daily average on days with complete records.")} {tr("Meals recorded on")} {summary.days_recorded} {tr("of")}{" "}
         {summary.days_in_period} {tr("days")}.
       </p>
-      <NutrientTray values={summary.daily_average_on_complete_days} />
+      <NutrientTray values={summary.daily_average_on_complete_days} coverage={summary.days_with_complete_data} />
+      {NUTRIENT_KEYS.some(key => summary.daily_average_on_complete_days[key] === null) && <p className="text-sm text-ink-3">{tr("Missing nutrient values are not zero. Check food choices and portions in the diary.")}</p>}
       {missing > 0 && (
         <p className="rounded-md border border-warn/25 bg-warn-soft px-3 py-2 text-sm text-warn">
           {missing} {tr("day(s) have no meal record. They are unknown, not days without eating.")}
@@ -126,11 +129,11 @@ function PlanCard({ plan }: { plan: NutritionPlan | null }) {
   return (
     <div className="space-y-2 text-sm">
       <p className="text-ink-3">
-        {tr("Version")} {plan.version} · {tr("approved by")} <bdi>{plan.approved_by_name}</bdi> · <bdi>{dateOnly(plan.approved_at)}</bdi>
+        {tr("Version")} {plan.version} · {tr("approved by")} <bdi>{tr(plan.approved_by_name ?? "")}</bdi> · <bdi>{dateOnly(plan.approved_at)}</bdi>
       </p>
       {plan.guidance && (
         <p className="text-base leading-7 text-ink" dir="auto">
-          {plan.guidance}
+          {tr(plan.guidance ?? "")}
         </p>
       )}
       {limits.length > 0 && (
@@ -147,7 +150,7 @@ function PlanCard({ plan }: { plan: NutritionPlan | null }) {
       )}
       {plan.allergies.length > 0 && (
         <p>
-          <span className="font-medium">{tr("Allergies")}:</span> {plan.allergies.join(", ")}
+          <span className="font-medium">{tr("Allergies")}:</span> {plan.allergies.map(tr).join("، ")}
         </p>
       )}
     </div>
@@ -208,23 +211,38 @@ function Overview({ data, add, showPlan = true }: { data: NutritionOverview; add
 }
 
 function MealHistory({ patient, canLog }: { patient: string; canLog: boolean }) {
-  const meals = useGet<Meal[]>(`/nutrition/meals/?patient=${patient}`);
+  const [from, setFrom] = useState(() => { const date = new Date(); date.setDate(date.getDate() - 29); return date.toLocaleDateString("en-CA"); });
+  const [to, setTo] = useState(today);
+  const [filter, setFilter] = useState("all");
+  const [editing, setEditing] = useState<Meal | null>(null);
+  const validPeriod = Boolean(from && to && from <= to);
+  const meals = useGet<Meal[]>(validPeriod ? `/nutrition/meals/?patient=${patient}&from=${from}&to=${to}` : null);
   const remove = useAction();
+  if (editing) return <AddMeal key={editing.id} patient={patient} diary="/patient/nutrition/history/" initialMeal={editing} onDone={() => { setEditing(null); meals.reload(); }} />;
   return (
-    <Section icon={History} title="Meal diary" description="The last 30 days, newest first.">
+    <Section icon={History} title="Meal diary" description="Review meals, correct portions, and see which entries need checking.">
+      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+        <label>{tr("From")}<Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></label>
+        <label>{tr("To")}<Input type="date" value={to} onChange={e => setTo(e.target.value)} /></label>
+        <label>{tr("Show meals")}<select className="control w-full px-3" value={filter} onChange={e => setFilter(e.target.value)}><option value="all">{tr("All meals")}</option><option value="needs_review">{tr("Needs review")}</option><option value="confirmed">{tr("Confirmed")}</option></select></label>
+      </div>
+      {!validPeriod && <ErrorNote message="Choose a valid date range." />}
       <ErrorNote message={remove.error} />
-      <Load from={meals} empty="No meals recorded in this period.">
+      {validPeriod && <Load from={meals} empty="No meals recorded in this period.">
         {(rows) => (
           <ul className="space-y-3">
-            {rows.map((meal) => (
+            {rows.filter(meal => filter === "all" || meal.confirmation_status === filter).map((meal) => (
               <li key={meal.id} className="rounded-lg border border-line p-3">
                 <div className="flex flex-wrap items-center gap-2 text-sm">
                   <span className="font-semibold">{label(meal.meal_type)}</span>
                   <time className="text-ink-3">{dateTime(meal.consumed_at)}</time>
                   <Status value={meal.confirmation_status} />
                   <span className="text-ink-3">
-                    {tr("Recorded by")} {meal.created_by_name}
+                    {tr("Recorded by")} {tr(meal.created_by_name)}
                   </span>
+                  {canLog && (
+                    <Button size="sm" variant="outline" className="ms-auto" onClick={() => setEditing(meal)}><Tx k="Correct meal" /></Button>
+                  )}
                   {canLog && (
                     <Button
                       size="sm"
@@ -240,15 +258,17 @@ function MealHistory({ patient, canLog }: { patient: string; canLog: boolean }) 
                 </div>
                 <p className="my-2 text-sm" dir="auto">
                   {meal.components
-                    .map((c) => `${c.name} (${Number(c.quantity)} ${unitName(c.unit)}${c.food_item ? "" : ` · ${tr("not in the food list")}`})`)
+                    .map((c) => `${tr(c.food_name || c.name)} (${Number(c.quantity)} ${unitName(c.unit)}${c.food_item ? "" : ` · ${tr("not in the food list")}`})`)
                     .join(" · ")}
                 </p>
-                <NutrientTray values={meal.estimate} />
+                {meal.confirmation_status === "needs_review" && <p className="mb-2 text-sm text-warn">{tr("Check the selected foods and portions to complete this entry.")}</p>}
+                <details><summary className="cursor-pointer text-sm font-medium text-brand">{tr("Show nutrition estimates")}</summary><div className="mt-2"><NutrientTray values={meal.estimate} dense /></div></details>
               </li>
             ))}
+            {!rows.some(meal => filter === "all" || meal.confirmation_status === filter) && <li>{tr("No meals match this filter.")}</li>}
           </ul>
         )}
-      </Load>
+      </Load>}
     </Section>
   );
 }
@@ -270,6 +290,7 @@ type Speech = {
   lang: string;
   onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
   onend: (() => void) | null;
+  onerror: (() => void) | null;
   start(): void;
 };
 const speechCtor = () => {
@@ -293,24 +314,27 @@ const localNow = () => {
   const now = new Date();
   return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 };
+const blankMealRow = (): Row => ({ key: Date.now() + Math.random(), name: "", food: "", quantity: "1", unit: "serving", checked: false, unsure: false });
+const futureMealTime = (date: Date) => date.getTime() > Date.now();
 
-function AddMeal({ patient, diary }: { patient: string; diary: string }) {
+function AddMeal({ patient, diary, initialMeal, onDone, photoAvailable = false }: { patient: string; diary: string; initialMeal?: Meal; onDone?: () => void; photoAvailable?: boolean }) {
   const foods = useGet<Food[]>("/nutrition/foods/");
   const canSpeak = useSyncExternalStore(noop, () => Boolean(speechCtor()), () => false);
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState(initialMeal?.description ?? "");
   const [photo, setPhoto] = useState<string | null>(null);
   const [method, setMethod] = useState<"text" | "voice" | "photo">("text");
   const [listening, setListening] = useState(false);
-  const [rows, setRows] = useState<Row[]>([]);
+  const [rows, setRows] = useState<Row[]>(() => initialMeal ? initialMeal.components.map((part, i) => ({ key: i, name: part.name, food: part.food_item ?? "", quantity: String(part.quantity), unit: part.unit, checked: part.portion_verified, unsure: false })) : [{ key: 0, name: "", food: "", quantity: "1", unit: "serving", checked: false, unsure: false }]);
+  const [search, setSearch] = useState("");
   const [notes, setNotes] = useState<string[]>([]);
-  const [mealType, setMealType] = useState("lunch");
-  const [when, setWhen] = useState(localNow);
+  const [mealType, setMealType] = useState(initialMeal?.meal_type ?? (new Date().getHours() < 11 ? "breakfast" : new Date().getHours() < 17 ? "lunch" : "dinner"));
+  const [when, setWhen] = useState(() => initialMeal ? new Date(new Date(initialMeal.consumed_at).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : localNow());
   const [saved, setSaved] = useState<Meal | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const find = useAction();
   const save = useAction();
   const byId = new Map((foods.data ?? []).map((f) => [f.id, f]));
-  const blank = (): Row => ({ key: Date.now() + Math.random(), name: "", food: "", quantity: "1", unit: "serving", checked: false, unsure: false });
+  const blank = blankMealRow;
   const edit = (key: number, change: Partial<Row>) => setRows((all) => all.map((r) => (r.key === key ? { ...r, ...change } : r)));
 
   const speak = () => {
@@ -323,8 +347,9 @@ function AddMeal({ patient, diary }: { patient: string; diary: string }) {
       setMethod("voice");
     };
     recognition.onend = () => setListening(false);
+    recognition.onerror = () => { setListening(false); setProblem("Speech input was unavailable. Type or choose foods instead."); };
     setListening(true);
-    recognition.start();
+    try { recognition.start(); } catch { setListening(false); setProblem("Speech input was unavailable. Type or choose foods instead."); }
   };
 
   const recognize = () =>
@@ -334,7 +359,7 @@ function AddMeal({ patient, diary }: { patient: string; diary: string }) {
         description,
         ...(photo ? { image_base64: photo } : {}),
       });
-      setNotes(result.ai_unavailable ? [tr("The assistant is unavailable right now. Add the foods yourself below.")] : result.uncertainties.map(tr));
+      setNotes(result.ai_unavailable ? ["The assistant is unavailable right now. Add the foods yourself below."] : result.uncertainties);
       setRows(
         result.items.length
           ? result.items.map((item, i) => ({
@@ -352,27 +377,42 @@ function AddMeal({ patient, diary }: { patient: string; diary: string }) {
 
   const submit = async () => {
     const parts = rows.filter((r) => r.name.trim() || r.food);
-    if (!parts.length || parts.some((r) => !(Number(r.quantity) > 0))) {
-      setProblem(tr("Add at least one food, each with an amount above zero."));
+    if (!parts.length || parts.some((r) => !(mealAmount(r.quantity) >= 0.01 && mealAmount(r.quantity) <= 99999.99))) {
+      setProblem("Add at least one food, each with an amount above zero.");
+      return;
+    }
+    const consumed = new Date(when);
+    if (!when || !Number.isFinite(consumed.getTime()) || futureMealTime(consumed)) {
+      setProblem("Choose a meal time that is not in the future.");
+      return;
+    }
+    if (parts.some(row => !row.checked)) {
+      setProblem("Confirm each food and amount before saving.");
+      return;
+    }
+    if (parts.some(row => row.food && row.unit !== "g" && !byId.get(row.food)?.portion_grams[row.unit])) {
+      setProblem("Choose a supported portion for each selected food.");
       return;
     }
     setProblem(null);
     await save.run(async () => {
-      const meal = await api.post<Meal>("/nutrition/meals/", {
+      const body = {
         patient,
         meal_type: mealType,
-        consumed_at: new Date(when).toISOString(),
+        consumed_at: consumed.toISOString(),
         entry_method: method,
         description,
         media_used: method === "text" ? "" : method,
         components: parts.map((r) => ({
           food_item: r.food || null,
-          name: r.name.trim() || byId.get(r.food)?.canonical_name,
-          quantity: Number(r.quantity),
+          name: byId.get(r.food)?.canonical_name ?? r.name.trim(),
+          quantity: mealAmount(r.quantity),
           unit: r.unit,
           portion_verified: r.checked,
         })),
-      });
+      };
+      const meal = initialMeal ? await api.patch<Meal>(`/nutrition/meals/${initialMeal.id}/`, body) : await api.post<Meal>("/nutrition/meals/", body);
+      if (onDone) { onDone(); return; }
       setSaved(meal);
       setRows([]);
       setDescription("");
@@ -393,7 +433,7 @@ function AddMeal({ patient, diary }: { patient: string; diary: string }) {
           <NutrientTray values={saved.estimate} />
           <Disclaimer />
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => setSaved(null)}>
+            <Button onClick={() => { setSaved(null); setRows([blank()]); setWhen(localNow()); }}>
               <Tx k="Add another meal" />
             </Button>
             <Link href={diary} className="inline-flex min-h-9 items-center rounded-md border border-line bg-white px-3 text-sm font-medium hover:bg-chrome">
@@ -407,6 +447,21 @@ function AddMeal({ patient, diary }: { patient: string; diary: string }) {
 
   return (
     <>
+      {onDone && <Button variant="outline" onClick={onDone}><Tx k="Cancel correction" /></Button>}
+      <Section icon={UtensilsCrossed} title={initialMeal ? "Correct meal" : "Choose foods and portions"} description="Select familiar foods below. You can record a meal without using the assistant.">
+        <Label htmlFor="food-search"><Tx k="Search the food list" /></Label>
+        <Input id="food-search" value={search} placeholder={tr("Search by Arabic or English food name")} onChange={e => setSearch(e.target.value)} />
+        <Load from={foods} empty="No foods found.">{catalog => {
+          const matches = catalog.filter(food => `${food.canonical_name} ${Object.values(food.localized_names).join(" ")}`.toLowerCase().includes(search.trim().toLowerCase())).slice(0, 8);
+          return <div className="mt-3 flex flex-wrap gap-2">{matches.map(food => <Button key={food.id} variant="outline" onClick={() => {
+            const row = { ...blank(), food: food.id, name: food.canonical_name, unit: Object.keys(food.portion_grams)[0] ?? "g" };
+            setRows(all => all.length === 1 && !all[0].name && !all[0].food ? [row] : [...all, row]);
+          }}>{localName(food.localized_names, food.canonical_name)}</Button>)}{!matches.length && <p>{tr("No foods found. Add an unlisted food below.")}</p>}</div>;
+        }}</Load>
+        <Button className="mt-3" variant="outline" onClick={() => setRows(all => all.length === 1 && !all[0].name && !all[0].food ? all : [...all, blank()])}><Tx k="Add an unlisted food" /></Button>
+      </Section>
+      <details className="rounded-lg border border-line bg-white p-4"><summary className="cursor-pointer font-medium text-brand">{tr(photoAvailable ? "Optional: describe, speak, or attach a photo" : "Optional: describe or speak")}</summary>
+      {!photoAvailable && <p className="mt-2 text-sm text-ink-3">{tr("Offline mode: select foods or use text suggestions. Photo recognition is unavailable.")}</p>}
       <Section icon={Sparkles} tone="ai" title="1. Describe the meal" description="Type it, say it, or take a photo. The assistant only suggests: you check every line before anything is saved.">
         <div className="space-y-3">
           <Label htmlFor="meal-description">
@@ -427,7 +482,7 @@ function AddMeal({ patient, diary }: { patient: string; diary: string }) {
                 {listening ? tr("Listening…") : tr("Speak")}
               </Button>
             )}
-            <label className="inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-md border border-line bg-white px-3 text-sm font-medium hover:bg-chrome">
+            {photoAvailable && <label className="inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-md border border-line bg-white px-3 text-sm font-medium hover:bg-chrome">
               <Camera className="size-4" aria-hidden />
               {photo ? tr("Photo attached") : tr("Take or choose a photo")}
               <input
@@ -438,11 +493,11 @@ function AddMeal({ patient, diary }: { patient: string; diary: string }) {
                 onChange={async (event) => {
                   const file = event.target.files?.[0];
                   if (!file) return;
-                  setPhoto(await shrink(file));
-                  setMethod("photo");
+                  try { setPhoto(await shrink(file)); setMethod("photo"); setProblem(null); }
+                  catch { setProblem("This photo could not be opened. Choose another image or enter foods directly."); }
                 }}
               />
-            </label>
+            </label>}
             <Button type="button" onClick={recognize} disabled={find.pending || (!description.trim() && !photo)}>
               {find.pending ? tr("Looking…") : tr("Find foods")}
             </Button>
@@ -457,11 +512,12 @@ function AddMeal({ patient, diary }: { patient: string; diary: string }) {
           <ErrorNote message={find.error} />
           {notes.map((note) => (
             <p key={note} className="rounded-md border border-warn/25 bg-warn-soft px-3 py-2 text-sm text-warn" dir="auto">
-              {note}
+              {tr(note)}
             </p>
           ))}
         </div>
       </Section>
+      </details>
 
       {rows.length > 0 && (
         <Section icon={ClipboardList} title="2. Check and save" description="Correct the food and amount on each line, then tick it when it is right.">
@@ -480,7 +536,7 @@ function AddMeal({ patient, diary }: { patient: string; diary: string }) {
                     <Label htmlFor={`name-${row.key}`}>
                       <Tx k="What it was" />
                     </Label>
-                    <Input id={`name-${row.key}`} dir="auto" value={row.name} onChange={(e) => edit(row.key, { name: e.target.value })} />
+                    <Input id={`name-${row.key}`} dir="auto" value={food ? localName(food.localized_names, food.canonical_name) : row.name} readOnly={Boolean(food)} onChange={(e) => edit(row.key, { name: e.target.value, checked: false })} />
                   </div>
                   <div className="space-y-1 sm:col-span-4">
                     <Label htmlFor={`food-${row.key}`}>
@@ -492,7 +548,7 @@ function AddMeal({ patient, diary }: { patient: string; diary: string }) {
                       value={row.food}
                       onChange={(e) => {
                         const next = byId.get(e.target.value);
-                        edit(row.key, { food: e.target.value, unit: next ? Object.keys(next.portion_grams)[0] : row.unit, checked: false });
+                        edit(row.key, { food: e.target.value, name: next?.canonical_name ?? "", unit: next ? Object.keys(next.portion_grams)[0] : row.unit, checked: false });
                       }}
                     >
                       <option value="">{tr("Not in the list (values unknown)")}</option>
@@ -531,9 +587,9 @@ function AddMeal({ patient, diary }: { patient: string; diary: string }) {
                       <input type="checkbox" className="size-5" checked={row.checked} onChange={(e) => edit(row.key, { checked: e.target.checked })} />
                       <Tx k="This food and amount are right" />
                     </label>
-                    {perUnit && Number(row.quantity) > 0 && (
+                    {perUnit && mealAmount(row.quantity) > 0 && (
                       <span className="text-ink-3">
-                        {tr("about")} {withUnit(Math.round(perUnit * Number(row.quantity)), "g")}
+                        {tr("about")} {withUnit(Math.round(perUnit * mealAmount(row.quantity)), "g")}
                       </span>
                     )}
                     {row.unsure && !row.checked && <span className="text-warn">{tr("The assistant was not sure. Please check.")}</span>}
@@ -562,10 +618,11 @@ function AddMeal({ patient, diary }: { patient: string; diary: string }) {
                 <Label htmlFor="meal-when">
                   <Tx k="When" />
                 </Label>
-                <Input id="meal-when" type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} />
+                <Input id="meal-when" type="datetime-local" max={localNow()} value={when} onChange={(e) => setWhen(e.target.value)} />
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-3">
+              <Button type="button" variant="outline" onClick={() => setRows(all => [...all, blank()])}><Tx k="Add a food myself" /></Button>
               <Button onClick={submit} disabled={save.pending}>
                 {save.pending ? tr("Saving…") : tr("Save meal")}
               </Button>
@@ -623,7 +680,7 @@ function Suggestions({ patient, canDecide, canRequest }: { patient: string; canD
                   </div>
                   <p className="micro text-ink-3">
                     {idea.personalized ? tr("Compared with the approved plan") : tr("General idea, not personalized")}
-                    {idea.reviewed_by_name && idea.review_status === "approved" ? ` · ${tr("approved by")} ${idea.reviewed_by_name}` : ""}
+                    {idea.reviewed_by_name && idea.review_status === "approved" ? ` · ${tr("approved by")} ${tr(idea.reviewed_by_name)}` : ""}
                   </p>
                   <p className="text-sm leading-6" dir="auto">
                     {tr(idea.reasoning_summary)}
@@ -633,7 +690,7 @@ function Suggestions({ patient, canDecide, canRequest }: { patient: string; canD
                     <summary className="cursor-pointer font-medium text-brand">{tr("How to prepare")}</summary>
                     <ol className="mt-1 list-decimal space-y-1 ps-5" dir="auto">
                       {idea.recipe.preparation_method.map((step) => (
-                        <li key={step}>{step}</li>
+                        <li key={step}>{tr(step ?? "")}</li>
                       ))}
                     </ol>
                   </details>
@@ -674,11 +731,11 @@ function LabTable({ labs }: { labs: LabFact[] }) {
     <ul className="divide-y divide-line text-sm">
       {labs.map((lab) => (
         <li key={lab.id} className="flex flex-wrap gap-x-4 gap-y-1 py-1.5">
-          <span className="font-medium">{lab.analyte}</span>
+          <span className="font-medium">{tr(lab.analyte ?? "")}</span>
           <span className="font-semibold">{withUnit(lab.value, lab.unit)}</span>
           {lab.reference_low !== null && lab.reference_high !== null && (
             <span className="text-ink-3">
-              {tr("laboratory range")} <span dir="ltr">{`${lab.reference_low}–${lab.reference_high} ${lab.unit}`}</span>
+              {tr("laboratory range")} <span dir="ltr">{`${lab.reference_low}–${lab.reference_high} ${tr(lab.unit)}`}</span>
             </span>
           )}
           <time className="ms-auto text-ink-3">{dateOnly(lab.collected_at)}</time>
@@ -703,7 +760,7 @@ function ReviewCard({ review, canDecide, onChange }: { review: FoodLabReview; ca
           {dateOnly(review.date_from)} – {dateOnly(review.date_to)}
         </span>
         <Status value={review.review_status} />
-        {review.reviewed_by_name && <span className="text-ink-3">{review.reviewed_by_name}</span>}
+        {review.reviewed_by_name && <span className="text-ink-3">{tr(review.reviewed_by_name ?? "")}</span>}
       </div>
       {review.review_status === "approved" ? (
         <p className="micro text-ok">{tr("Reviewed by a clinician")}</p>
@@ -713,13 +770,13 @@ function ReviewCard({ review, canDecide, onChange }: { review: FoodLabReview; ca
       {review.ai_error.length > 0 && <p className="text-sm text-bad">{tr("The AI draft was unavailable or rejected by the safety checks. The recorded facts are still shown.")}</p>}
       <ul className="list-disc space-y-1 ps-5 text-sm leading-6" dir="auto">
         {review.possible_associations.map((item) => (
-          <li key={item.text}>{item.text}</li>
+          <li key={item.text}>{tr(item.text ?? "")}</li>
         ))}
       </ul>
       {review.questions.length > 0 && canDecide && (
         <ul className="list-disc ps-5 text-sm text-ink-2" dir="auto">
           {review.questions.map((q) => (
-            <li key={q}>{q}</li>
+            <li key={q}>{tr(q ?? "")}</li>
           ))}
         </ul>
       )}
@@ -730,7 +787,7 @@ function ReviewCard({ review, canDecide, onChange }: { review: FoodLabReview; ca
       </ul>
       {review.review_notes && (
         <p className="text-sm" dir="auto">
-          <span className="font-medium">{tr("Clinician note")}:</span> {review.review_notes}
+          <span className="font-medium">{tr("Clinician note")}:</span> {tr(review.review_notes ?? "")}
         </p>
       )}
       {canDecide && open && (
@@ -805,7 +862,7 @@ function ReportCard({ report, canDecide, onChange }: { report: NutritionReport; 
     <li className="space-y-3 rounded-lg border border-line p-4">
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="font-semibold">
-          {report.patient_name} · {dateOnly(report.period_start)} – {dateOnly(report.period_end)}
+          {tr(report.patient_name ?? "")} · {dateOnly(report.period_start)} – {dateOnly(report.period_end)}
         </h3>
         <Status value={report.release_status} />
         <span className="text-sm text-ink-3">
@@ -830,17 +887,17 @@ function ReportCard({ report, canDecide, onChange }: { report: NutritionReport; 
         <div className="space-y-2 rounded-md border-s-4 border-s-ai bg-ai-soft/40 p-3">
           {report.release_status === "released" ? (
             <p className="micro text-ok">
-              {tr("AI-drafted, reviewed and released by")} {report.reviewed_by_name}
+              {tr("AI-drafted, reviewed and released by")} {tr(report.reviewed_by_name ?? "")}
             </p>
           ) : (
             <AiLabel text="Unverified draft. Not visible to the patient until a clinician releases this report." />
           )}
           <p className="leading-7" dir="auto">
-            {draft.overview}
+            {tr(draft.overview ?? "")}
           </p>
           <ul className="list-disc ps-5 text-sm" dir="auto">
             {draft.observations.map((line) => (
-              <li key={line}>{line}</li>
+              <li key={line}>{tr(line ?? "")}</li>
             ))}
           </ul>
           <ul className="list-disc ps-5 text-xs text-ink-3">
@@ -854,7 +911,7 @@ function ReportCard({ report, canDecide, onChange }: { report: NutritionReport; 
       )}
       {report.clinician_review && (
         <p className="text-sm" dir="auto">
-          <span className="font-medium">{tr("Clinician note")}:</span> {report.clinician_review}
+          <span className="font-medium">{tr("Clinician note")}:</span> {tr(report.clinician_review ?? "")}
         </p>
       )}
       {canDecide && report.release_status !== "released" && (
@@ -923,6 +980,7 @@ const words = (text: string) => text.split(/[,،]/).map((w) => w.trim()).filter(
 function PlanPanel({ patient, canDecide }: { patient: string; canDecide: boolean }) {
   const path = `/nutrition/patients/${patient}/plans/`;
   const plans = useGet<NutritionPlan[]>(path);
+  const active = plans.data?.find(plan => plan.active);
   return (
     <Section id="plan" icon={ClipboardList} title="Nutrition plan" description="Only a doctor or dietitian approves a plan. Saving creates a new version; earlier versions are kept.">
       <Load from={plans} empty="No nutrition plan has been approved yet.">
@@ -935,8 +993,10 @@ function PlanPanel({ patient, canDecide }: { patient: string; canDecide: boolean
           </div>
         )}
       </Load>
-      {canDecide && (
+      {canDecide && !plans.loading && (
         <ZForm
+          key={active?.id ?? "new-plan"}
+          defaults={{ ...active?.prescribed_targets, guidance: active?.guidance ?? "", allergies: active?.allergies.map(tr).join("، ") ?? "" }}
           schema={planSchema}
           submitLabel="Approve new plan version"
           fields={[
@@ -975,10 +1035,10 @@ function Observations({ patient, canWrite }: { patient: string; canWrite: boolea
             {rows.map((note) => (
               <li key={note.id} className="flex flex-wrap items-center gap-2 py-2">
                 <span className="font-medium">{label(note.kind)}</span>
-                <span dir="auto">{note.text}</span>
+                <span dir="auto">{tr(note.text ?? "")}</span>
                 {note.referred && <span className="micro rounded border border-warn/25 bg-warn-soft px-1.5 text-warn">{tr("Referred")}</span>}
                 <span className="ms-auto text-ink-3">
-                  {note.author_name} · {dateOnly(note.created_at)}
+                  {tr(note.author_name ?? "")} · {dateOnly(note.created_at)}
                 </span>
               </li>
             ))}
@@ -1039,7 +1099,7 @@ export function PatientNutrition({ view }: { view: PatientView }) {
           <select id="shared-patient" className="control px-3" value={target ?? ""} onChange={(e) => setPicked(e.target.value)}>
             {shared.data?.map((row) => (
               <option key={row.patient} value={row.patient}>
-                {row.patient_name}
+                {tr(row.patient_name ?? "")}
               </option>
             ))}
           </select>
@@ -1058,7 +1118,7 @@ export function PatientNutrition({ view }: { view: PatientView }) {
             if (view === "labs") return <LabPanel patient={data.patient} canDecide={false} />;
             if (view === "reports") return <ReportsPanel patient={data.patient} canDecide={false} />;
             return data.can_log ? (
-              <AddMeal patient={data.patient} diary="/patient/nutrition/history/" />
+              <AddMeal patient={data.patient} diary="/patient/nutrition/history/" photoAvailable={data.photo_recognition_available} />
             ) : (
               <p className="rounded-md border border-dashed border-line bg-white px-3 py-6 text-center text-ink-3">
                 <Tx k="The patient has not allowed you to record meals for them." />
@@ -1089,12 +1149,16 @@ export function ClinicianNutrition({ view }: { view: ClinicianView }) {
   ];
   const back = user.role === "doctor" ? `/doctor/patients/${id}/` : HOME[user.role];
   return (
-    <Shell title={overview.data ? `${tr("Nutrition")} · ${overview.data.patient_name}` : "Nutrition"} back={back} nav={nav}>
+    <Shell title={overview.data ? `${tr("Nutrition")} · ${tr(overview.data.patient_name)}` : "Nutrition"} back={back} nav={nav}>
       {view === "lab-review" && <LabPanel patient={id} canDecide={canDecide} />}
       {view === "reports" && <ReportsPanel patient={id} canDecide={canDecide} />}
       {view === "overview" && (
         <>
           <Load from={overview}>{(data) => <Overview data={data} showPlan={false} />}</Load>
+          <div className="flex flex-wrap gap-2">
+            <a className="rounded-md border border-line bg-white px-3 py-2 text-brand" href="#plan">{tr("Nutrition plan")}</a>
+            <a className="rounded-md border border-line bg-white px-3 py-2 text-brand" href="#observations">{tr("Nursing observations about eating")}</a>
+          </div>
           <PlanPanel patient={id} canDecide={canDecide} />
           <Suggestions patient={id} canDecide={canDecide} canRequest={canDecide} />
           <Observations patient={id} canWrite={user.role === "nurse"} />

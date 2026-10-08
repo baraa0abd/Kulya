@@ -101,7 +101,21 @@ class PlanSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Expected a short list of words.")
         return [v.strip().lower() for v in value if v.strip()]
 
-    validate_allergies = validate_dietary_preferences = _strings
+    validate_dietary_preferences = _strings
+
+    def validate_allergies(self, value: list) -> list:
+        aliases = {
+            "سمك": "fish",
+            "السمك": "fish",
+            "أسماك": "fish",
+            "حليب": "milk",
+            "الحليب": "milk",
+            "بيض": "egg",
+            "البيض": "egg",
+            "غلوتين": "gluten",
+            "جلوتين": "gluten",
+        }
+        return sorted({aliases.get(word, word) for word in self._strings(value)})
 
 
 class RecommendationSerializer(serializers.ModelSerializer):

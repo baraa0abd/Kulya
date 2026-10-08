@@ -174,7 +174,7 @@ def save_meal(patient: Patient, user: User, data: dict, meal: MealLog | None = N
                 MealComponent(
                     meal=meal,
                     food_item=food,
-                    name=c["name"],
+                    name=food.canonical_name if food else c["name"],
                     quantity=c["quantity"],
                     unit=c["unit"],
                     estimated_grams=grams,

@@ -7,7 +7,7 @@ import { Load, type NavItem, NotificationInbox, Section, Shell, Stats, Status } 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { NursingAction, Patient, ReviewTask } from "@/lib/api";
 import { useRole } from "@/lib/auth";
-import { Tx, useLocale } from "@/lib/i18n";
+import { tr, Tx, useLocale } from "@/lib/i18n";
 import { dateTime, label } from "@/lib/format";
 import { useList } from "@/lib/hooks";
 
@@ -55,7 +55,7 @@ export default function DoctorDashboard() {
                   {rows.map((task) => (
                     <TableRow key={task.id}>
                       <TableCell>{dateTime(task.session_date)}</TableCell>
-                      <TableCell>{task.patient_name}</TableCell>
+                      <TableCell>{tr(task.patient_name ?? "")}</TableCell>
                       <TableCell>{task.finding_count}</TableCell>
                       <TableCell>
                         <Status value={task.review_status ?? "processing"} />
@@ -88,7 +88,7 @@ export default function DoctorDashboard() {
                   {rows.map((p) => (
                     <TableRow key={p.id}>
                       <TableCell>{p.mrn}</TableCell>
-                      <TableCell>{p.full_name}</TableCell>
+                      <TableCell>{tr(p.full_name ?? "")}</TableCell>
                       <TableCell className="text-end">
                         <Link className="font-medium text-brand hover:underline" href={`/doctor/patients/${p.id}/`}>
                           <Tx k="History and labs" />
@@ -112,10 +112,10 @@ export default function DoctorDashboard() {
                   <li key={a.id} className="py-2">
                     <div className="flex flex-wrap gap-2">
                       <span className="font-medium">{label(a.action_type)}</span>
-                      <span className="text-ink-3">{a.author_name}</span>
+                      <span className="text-ink-3">{tr(a.author_name ?? "")}</span>
                       <time className="ms-auto text-ink-3">{dateTime(a.performed_at)}</time>
                     </div>
-                    <p dir="auto">{a.description}</p>
+                    <p dir="auto">{tr(a.description ?? "")}</p>
                     <Link className="font-medium text-brand hover:underline" href={`/doctor/sessions/${a.session}/`}>
                       <Tx k="Open session" />
                     </Link>

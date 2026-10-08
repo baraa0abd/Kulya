@@ -38,7 +38,7 @@ export default function DoctorPatientPage() {
   const unreleased = labs.data?.filter((r) => !r.released_to_patient) ?? [];
   const NAV = [...SECTIONS, { href: `/doctor/patients/${id}/nutrition/`, label: "Nutrition", icon: Salad }];
   return (
-    <Shell title={patient.data ? `${patient.data.full_name} (${patient.data.mrn})` : "Patient"} back="/doctor/" nav={NAV}>
+    <Shell title={patient.data ? `${tr(patient.data.full_name)} (${patient.data.mrn})` : "Patient"} back="/doctor/" nav={NAV}>
       <Section id="history" icon={History} title="Dialysis session history">
         <Load from={sessions} empty="No sessions recorded.">
           {(rows) => <SessionTable sessions={rows} hrefFor={(s) => `/doctor/sessions/${s.id}/`} />}
@@ -86,7 +86,7 @@ export default function DoctorPatientPage() {
                   {tr("Version")} {rx.version}
                   {rx.active ? ` ${tr("(active)")}` : ""}: {withUnit(rx.duration_minutes, "min")} · {tr("target UF")}{" "}
                   {withUnit(rx.target_uf_ml, "mL")} · {tr("blood flow")} {withUnit(rx.blood_flow_ml_min, "mL/min")} · {tr("access")}{" "}
-                  {rx.access_type}
+                  {tr(rx.access_type)}
                 </li>
               ))}
             </ul>

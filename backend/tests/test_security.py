@@ -38,6 +38,19 @@ def test_service_accounts_cannot_log_in(api, make_user) -> None:
     assert api().post("/api/auth/login/", body, format="json").status_code == 401
 
 
+def test_dietitian_can_restore_their_signed_in_session(api, org, make_user) -> None:
+    dietitian = make_user("dietitian_restore", Role.DIETITIAN, org)
+    login = api().post(
+        "/api/auth/login/", {"username": dietitian.username, "password": "pw-for-tests-12345"}, format="json"
+    )
+    assert login.status_code == 200
+    client = api()
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {login.json()['access']}")
+    response = client.get("/api/auth/me/")
+    assert response.status_code == 200
+    assert response.json()["role"] == Role.DIETITIAN
+
+
 def test_assigned_doctor_can_read_clinical_endpoints(api, doctor) -> None:
     for endpoint in ("patients", "sessions", "ai/reviews", "labs"):
         assert api(doctor).get(f"/api/{endpoint}/").status_code == 200

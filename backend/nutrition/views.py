@@ -5,6 +5,7 @@ import base64
 import binascii
 from datetime import date, timedelta
 
+from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Q
 from django.utils import timezone
@@ -99,6 +100,8 @@ class OverviewView(APIView):
                     "last_7_days": services.diary(patient, today - timedelta(days=6), today),
                     "active_plan": PlanSerializer(plan).data if plan else None,
                     "can_log": patients_for(user, LOG).filter(pk=patient.pk).exists() and user.role in HOUSEHOLD,
+                    "photo_recognition_available": settings.LLM_PROVIDER == "anthropic"
+                    and bool(settings.ANTHROPIC_API_KEY),
                 }
             )
         rows = []

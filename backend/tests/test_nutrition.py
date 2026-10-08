@@ -158,6 +158,32 @@ def test_meal_estimate_is_computed_by_the_server(api, patient, foods) -> None:
     assert [c["estimated_grams"] for c in meal["components"]] == ["158.0", "100.0"]
 
 
+def test_linked_food_name_cannot_disagree_with_calculated_nutrients(api, patient, foods) -> None:
+    body = meal_body(foods, ("cucumber", 1, "piece"))
+    body["components"][0]["name"] = "unrelated food label"
+    meal = api(patient.user).post(f"{API}/meals/", body, format="json").json()
+    assert meal["components"][0]["name"] == "cucumber"
+    assert meal["estimate"]["potassium_mg"] == 147.0
+
+
+def test_arabic_portion_recognition(api, patient, foods) -> None:
+    response = api(patient.user).post(f"{API}/ai/recognize/", {"description": "٢ حبة بيض، ١٫٥ كوب رز"}, "json")
+    assert response.status_code == 200
+    items = response.json()["items"]
+    assert [(item["quantity"], item["unit"]) for item in items] == [(2.0, "piece"), (1.5, "cup")]
+    assert items[0]["food_name"] == "egg, boiled"
+    assert items[1]["food_name"] == "white rice, cooked"
+
+
+def test_arabic_allergies_use_catalogue_codes() -> None:
+    from nutrition.serializers import PlanSerializer
+
+    plan = PlanSerializer(data={"allergies": ["سمك", "حليب", "بيض", "غلوتين"]}, partial=True)
+    assert plan.is_valid(), plan.errors
+    assert set(plan.validated_data["allergies"]) == {"fish", "milk", "egg", "gluten"}
+    assert engine.classify_recipe({}, ["fish"], {"allergies": plan.validated_data["allergies"]})[0] is None
+
+
 def test_unmatched_food_and_missing_data_are_flagged(api, patient, foods) -> None:
     meal = log(api, patient.user, foods, ("homemade kubba", 2, "piece"), ("white rice, cooked", 1, "cup")).json()
     assert meal["confirmation_status"] == "needs_review"

@@ -167,6 +167,17 @@ def validate_report(output: Any, payload: dict) -> Errors:
 # --- Offline mock: a template over the structured input, not a language model. ----------------
 
 _PORTION_WORDS = {"cup", "piece", "glass", "tablespoon", "serving", "g", "gram", "ml", "kg"}
+_PORTION_ALIASES = {
+    "كوب": "cup",
+    "قدح": "cup",
+    "قطعة": "piece",
+    "حبة": "piece",
+    "حصة": "serving",
+    "غ": "g",
+    "غرام": "g",
+    "مل": "ml",
+    "ملعقة": "tablespoon",
+}
 _SEPARATORS = (",", "،", "+", " and ", " with ", " و ", " مع ")
 # The lab analyte that is shown next to each nutrient. Side by side only: no cause is implied.
 _PAIRS = {"potassium_mg": "potassium", "phosphorus_mg": "phosph", "sodium_mg": "sodium", "protein_g": "albumin"}
@@ -180,10 +191,12 @@ def _mock_items(description: str) -> list[dict]:
     for part in filter(None, (p.strip() for p in text.split("|"))):
         words, quantity, unit = part.split(), 1.0, "serving"
         try:
-            quantity, words = float(words[0]), words[1:]
+            quantity, words = float(words[0].replace("٫", ".")), words[1:]
             unit = "piece"
         except ValueError:
             pass
+        if words and words[0] in _PORTION_ALIASES:
+            words[0] = _PORTION_ALIASES[words[0]]
         if words and words[0].lower().rstrip("s") in _PORTION_WORDS and len(words) > 1:
             unit, words = words[0].lower().rstrip("s"), words[1:]
         if words and 0 < quantity <= 5000:

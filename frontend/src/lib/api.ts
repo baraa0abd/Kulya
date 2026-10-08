@@ -173,6 +173,7 @@ export interface Notification {
   kind: string;
   title: string;
   session: string | null;
+  patient?: string | null;
   read_at: string | null;
   created_at: string;
 }
@@ -248,6 +249,7 @@ export interface Meal {
   components: MealPart[];
   estimate: Nutrients | null;
   created_by_name: string;
+  description?: string;
 }
 export interface DiarySummary {
   days_in_period: number;
@@ -270,6 +272,7 @@ export interface NutritionPlan {
   active: boolean;
 }
 export interface NutritionOverview {
+  photo_recognition_available?: boolean;
   patient: string;
   patient_name: string;
   today: DiarySummary;
@@ -431,6 +434,7 @@ export const api = {
   list: async <T>(path: string) => (await request<Page<T>>(path)).results,
   post: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) }),
+  patch: <T>(path: string, body: unknown) => request<T>(path, { method: "PATCH", body: JSON.stringify(body) }),
   del: (path: string) => request<void>(path, { method: "DELETE" }),
   async login(username: string, password: string): Promise<User> {
     const data = await request<Tokens & { user: User }>("/auth/login/", {

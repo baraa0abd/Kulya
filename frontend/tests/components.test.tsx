@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
@@ -131,13 +131,13 @@ describe("Arabic interface", () => {
       expect(tr("Sign in")).toBe("تسجيل الدخول");
       expect(label("action_without_reason")).toBe("إجراء بلا سبب");
       expect(withUnit(null, "kg")).toBe("غير مسجَّل");
-      // Values and units are never translated; they are isolated left-to-right so they do not flip.
-      expect(withUnit("64.0", "kg")).toBe("⁦64 kg⁩");
+      // Numeric values stay intact; localized units are isolated with them left-to-right.
+      expect(withUnit("64.0", "kg")).toBe("⁦64 كغ⁩");
       expect(tr("Some server text with no entry")).toBe("Some server text with no entry");
       render(<Status value="pending_review" />);
       expect(screen.getByText("بانتظار المراجعة")).toBeInTheDocument();
     } finally {
-      setLocale("en", false);
+      act(() => setLocale("en", false));
     }
     expect(document.documentElement.dir).toBe("ltr");
   });

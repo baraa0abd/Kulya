@@ -1,5 +1,79 @@
 # Test report
 
+## Nutrition usability and data integrity — 2026-10-08
+
+- Full backend suite: **144 passed**. Frontend suite: **88 passed**. TypeScript and ESLint passed.
+- Complete browser suite: **38 passed in the initial full run**. After separating the browser-test
+  database and making fixtures independent, final checks were run as nutrition/notifications
+  (11 cases) and the remaining screens/Arabic/clinical workflows (27 cases).
+- Direct entry, Arabic amounts, selected-food identity, confirmation, correction with server
+  recalculation, diary filters, invalid dates, food estimates, nurse observations and care-plan
+  approval are covered. Arabic allergen normalization has a backend regression test.
+- Five exact known script-test meal artifacts were withdrawn from the interactive demo with
+  audit history retained. Other records were preserved.
+- Photo recognition stays unavailable in offline mode; external provider behavior and medical
+  correctness of the demo catalog remain unverified.
+
+See [NUTRITION_WORKFLOW.md](NUTRITION_WORKFLOW.md) for user flows and the separate test database.
+
+## Notification navigation — 2026-10-08
+
+- Session notifications open their exact doctor/nurse session record or patient/family released
+  session summary. Unread notifications are marked read on click.
+- Patient summary detail uses the existing authorized, verified-and-released API; unknown or
+  unavailable sessions show an empty state without exposing clinical drafts.
+- Frontend suite: **77 passed**. Notification Chromium tests: **3 passed** for patient, doctor
+  and nurse, including exact destination, read status, patient content and unknown-session handling.
+- TypeScript and ESLint passed. Local frontend/API restarted on ports 3000/8000.
+
+## Arabic localization — 2026-10-08
+
+- Frontend translation coverage, API, validation and component tests: **71 passed**.
+- Arabic Chromium screen checks: **6 passed**, covering all permitted routes for doctor,
+  nurse, patient, dietitian and family; invalid login; RTL layout; language switching.
+- TypeScript, ESLint and whitespace checks: passed.
+- Complete Chromium regression suite: **34 passed in one run (4.6 minutes)**,
+  including the six Arabic checks and all clinical/nutrition workflows.
+- Live doctor, nurse and patient tabs remain open in Arabic on port 3000.
+
+Checks used the current API/frontend on isolated ports 8001/3001. The older API process on
+8000 had not loaded the previous dietitian authentication repair, so the current isolated
+stack was used to verify all roles. See [LOCALIZATION.md](LOCALIZATION.md) for scope and
+the distinction between translated interface/demo content and original user-entered records.
+
+## Expanded screen and input validation — 2026-10-08
+
+| Check | Verified result |
+|---|---|
+| Full backend suite, PostgreSQL | **141 passed** |
+| Frontend unit/component/API tests | **57 passed** |
+| Complete Chromium suite | **28 passed in one final run (2.7 minutes)** |
+| Chromium screen and input cases | **14 passed** |
+| Chromium clinical workflow | **7 passed** |
+| Chromium nutrition workflow | **7 passed in its final suite run** |
+| Frontend TypeScript and ESLint | Passed |
+| Ruff on changed backend files | Passed |
+
+All 28 browser cases passed together in the final complete suite run after repairs. Initial browser failures
+included missing Chromium, test selectors matching Next.js's route announcer, login throttling,
+assumptions about untouched seed data, and asynchronous assertions. Chromium was installed;
+separate test servers on ports 3001/8001 used a test-only increased login rate limit. Production
+rate limits were not changed. Browser tests modified only the local synthetic demo data.
+
+Three application defects were fixed and covered by regression tests:
+
+- Dietitian authentication could not be restored after a browser reload because `/auth/me/`
+  omitted the dietitian role.
+- Empty numeric measurement fields could be coerced to zero, including machine readings.
+- The login form trimmed password whitespace before authentication.
+
+The screen inventory, input partitions, expected outcomes, commands and remaining limitations
+are in [TEST_CASES.md](TEST_CASES.md). Camera/microphone interaction, external AI/USDA providers,
+non-Chromium browsers, production deployment and clinical correctness remain unverified.
+No new production build or Docker image build was performed for this expansion.
+
+## Prior baseline run
+
 Run on 2026-10-08, Windows 11, Python 3.14, Node 24, PostgreSQL 16 + pgvector and Redis 7 in
 Docker. All AI calls used the offline `MockProvider`. **No request was sent to the Claude API.**
 

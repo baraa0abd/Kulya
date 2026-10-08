@@ -51,7 +51,7 @@ export default function DietitianDashboard() {
                 <TableBody>
                   {data.map((row) => (
                     <TableRow key={row.patient}>
-                      <TableCell className="font-medium">{row.patient_name}</TableCell>
+                      <TableCell className="font-medium">{tr(row.patient_name ?? "")}</TableCell>
                       <TableCell className={row.has_active_plan ? "text-ok" : "text-warn"}>
                         {row.has_active_plan ? tr("Approved") : tr("None yet")}
                       </TableCell>

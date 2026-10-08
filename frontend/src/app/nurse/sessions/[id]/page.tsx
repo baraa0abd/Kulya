@@ -22,6 +22,7 @@ import { useRole } from "@/lib/auth";
 import { tr, Tx, useLocale } from "@/lib/i18n";
 import { dateTime, label } from "@/lib/format";
 import { useGet, useList } from "@/lib/hooks";
+import { requiredNumber } from "@/lib/validation";
 
 const NAV: NavItem[] = [
   { href: "#session", label: "Dialysis session", icon: Activity },
@@ -52,9 +53,9 @@ const READINGS: Record<string, string> = {
   uf_removed: "mL",
 };
 const withUnits = (table: Record<string, string>): [string, string][] =>
-  Object.entries(table).map(([kind, unit]) => [kind, `${label(kind)} (${unit})`]);
+  Object.entries(table).map(([kind, unit]) => [kind, `${label(kind)} (${tr(unit)})`]);
 
-const number = z.coerce.number({ message: "Enter a number." });
+const number = requiredNumber;
 const vitalSchema = z.object({ kind: z.string(), phase: z.enum(["pre", "intra", "post"]), value: number });
 const readingSchema = z.object({ kind: z.string(), value: number });
 const actionSchema = z.object({ action_type: z.string(), description: requiredText("Description"), reason: z.string() });
@@ -92,7 +93,7 @@ export default function NurseSessionPage() {
       <Load from={session}>
         {(s) => (
           <div className="grid gap-5 xl:grid-cols-3 xl:grid-rows-[auto_auto_1fr] xl:items-start">
-            <Section id="session" icon={Activity} className="xl:col-span-2" title={`${s.patient_name} · ${tr("scheduled")} ${dateTime(s.scheduled_start)}`} action={<Status value={s.status} />}>
+            <Section id="session" icon={Activity} className="xl:col-span-2" title={`${tr(s.patient_name)} · ${tr("scheduled")} ${dateTime(s.scheduled_start)}`} action={<Status value={s.status} />}>
               {s.status === "scheduled" && (
                 <ZForm
                   schema={startSchema}
@@ -225,7 +226,7 @@ export default function NurseSessionPage() {
                       <ul className="list-disc space-y-1 ps-5 text-sm" data-testid="completeness">
                         {result.rule_findings.map((f) => (
                           <li key={f.finding_id}>
-                            <span className="font-medium">{label(f.check)}:</span> {f.description}
+                            <span className="font-medium">{label(f.check)}:</span> {tr(f.description ?? "")}
                           </li>
                         ))}
                       </ul>
@@ -239,8 +240,8 @@ export default function NurseSessionPage() {
                     <ul className="divide-y divide-line text-sm">
                       {rows.map((f) => (
                         <li key={f.id} className="py-2">
-                          <span className="font-medium">{label(f.kind)}</span> · {f.author_name} · {dateTime(f.created_at)}
-                          <p dir="auto">{f.text}</p>
+                          <span className="font-medium">{label(f.kind)}</span> · {tr(f.author_name ?? "")} · {dateTime(f.created_at)}
+                          <p dir="auto">{tr(f.text ?? "")}</p>
                         </li>
                       ))}
                     </ul>

@@ -23,9 +23,10 @@ import { useRole } from "@/lib/auth";
 import { tr, Tx, useLocale } from "@/lib/i18n";
 import { dateOnly, dateTime, label, weekOf, withUnit } from "@/lib/format";
 import { useAction, useList } from "@/lib/hooks";
+import { requiredNumber } from "@/lib/validation";
 
 const HOME_UNITS: Record<string, string> = { weight: "kg", systolic_bp: "mmHg", diastolic_bp: "mmHg", heart_rate: "bpm" };
-const measurementSchema = z.object({ kind: z.string(), value: z.coerce.number({ message: "Enter a number." }) });
+const measurementSchema = z.object({ kind: z.string(), value: requiredNumber });
 const consentSchema = z.object({
   caregiver_username: requiredText("Caregiver username"),
   share: z.enum([
@@ -66,7 +67,7 @@ function FamilySharing() {
           <ul className="mb-4 divide-y divide-line text-sm">
             {rows.map((c) => (
               <li key={c.id} className="flex flex-wrap items-center gap-3 py-2">
-                <span className="font-medium">{c.caregiver_name}</span>
+                <span className="font-medium">{tr(c.caregiver_name ?? "")}</span>
                 <span>{c.scopes.map(label).join(", ")}</span>
                 {c.revoked_at ? (
                   <span className="text-ink-3">{tr("Stopped")} {dateOnly(c.revoked_at)}</span>
@@ -126,7 +127,7 @@ function HomeMeasurements() {
             name: "kind",
             label: "Measurement",
             type: "select",
-            options: Object.entries(HOME_UNITS).map(([kind, unit]): [string, string] => [kind, `${label(kind)} (${unit})`]),
+            options: Object.entries(HOME_UNITS).map(([kind, unit]): [string, string] => [kind, `${label(kind)} (${tr(unit)})`]),
           },
           { name: "value", label: "Value", type: "number" },
         ]}
@@ -204,9 +205,9 @@ export default function PatientDashboard() {
                     {tr("Doctor reviewed")}
                   </span>
                   <p className="text-sm text-ink-3">
-                    {!isPatient && `${s.patient_name} · `}{tr("Session of")} {dateOnly(s.session_date)} · {tr("released")} {dateOnly(s.released_at)}
+                    {!isPatient && `${tr(s.patient_name)} · `}{tr("Session of")} {dateOnly(s.session_date)} · {tr("released")} {dateOnly(s.released_at)}
                   </p>
-                  <p className="mt-1 text-lg leading-8 text-ink">{s.text}</p>
+                  <p className="mt-1 text-lg leading-8 text-ink">{tr(s.text ?? "")}</p>
                 </li>
               ))}
             </ul>

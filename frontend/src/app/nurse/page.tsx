@@ -7,7 +7,7 @@ import { z } from "zod";
 import { Load, type NavItem, NotificationInbox, Section, SessionTable, Shell, Stats, ZForm } from "@/components/app";
 import { api, type Feedback, type Patient, type Session } from "@/lib/api";
 import { useRole } from "@/lib/auth";
-import { Tx, useLocale } from "@/lib/i18n";
+import { tr, Tx, useLocale } from "@/lib/i18n";
 import { dateTime, label, today } from "@/lib/format";
 import { useList } from "@/lib/hooks";
 
@@ -57,7 +57,8 @@ export default function NurseDashboard() {
                   {rows.map((p) => (
                     <li key={p.id} className="flex gap-3 py-2">
                       <span className="text-ink-3">{p.mrn}</span>
-                      <span className="font-medium">{p.full_name}</span>
+                      <span className="font-medium">{tr(p.full_name ?? "")}</span>
+                      <Link className="ms-auto font-medium text-brand hover:underline" href={`/doctor/patients/${p.id}/nutrition/`}><Tx k="Nutrition" /></Link>
                     </li>
                   ))}
                 </ul>
@@ -70,7 +71,7 @@ export default function NurseDashboard() {
                       name: "patient",
                       label: "Patient",
                       type: "select",
-                      options: rows.map((p): [string, string] => [p.id, `${p.mrn} — ${p.full_name}`]),
+                      options: rows.map((p): [string, string] => [p.id, `${p.mrn} — ${tr(p.full_name)}`]),
                     },
                     { name: "scheduled_start", label: "Start", type: "datetime-local" },
                   ]}
@@ -97,10 +98,10 @@ export default function NurseDashboard() {
                   <li key={f.id} className="py-2">
                     <div className="flex flex-wrap gap-2">
                       <span className="font-medium">{label(f.kind)}</span>
-                      <span className="text-ink-3">{f.author_name}</span>
+                      <span className="text-ink-3">{tr(f.author_name ?? "")}</span>
                       <time className="ms-auto text-ink-3">{dateTime(f.created_at)}</time>
                     </div>
-                    <p dir="auto">{f.text}</p>
+                    <p dir="auto">{tr(f.text ?? "")}</p>
                     <Link className="font-medium text-brand hover:underline" href={`/nurse/sessions/${f.session}/`}>
                       <Tx k="Open session" />
                     </Link>

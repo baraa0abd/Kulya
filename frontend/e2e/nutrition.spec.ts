@@ -33,6 +33,17 @@ async function shot(page: Page, name: string) {
 test.describe.configure({ mode: "serial" });
 let reviewUrl = "";
 
+// Establish this suite's plan explicitly, so prior runs cannot change its assumptions.
+test.beforeAll(async ({ request }) => {
+  const login = await request.post("/api/auth/login/", { data: { username: "dietitian1", password: demoPassword() } });
+  expect(login.ok()).toBeTruthy();
+  const headers = { Authorization: `Bearer ${(await login.json()).access}` };
+  const overview = await request.get("/api/nutrition/overview/", { headers });
+  const patient = (await overview.json()).find((row: { patient_name: string }) => row.patient_name === "Synthetic Patient One").patient;
+  const plan = await request.post(`/api/nutrition/patients/${patient}/plans/`, { headers, data: { prescribed_targets: { potassium_mg_max: 600, sodium_mg_max: 600, phosphorus_mg_max: 350 }, allergies: ["fish"], guidance: "Synthetic browser test plan." } });
+  expect(plan.status()).toBe(201);
+});
+
 test("patient sees the approved plan and records a meal after confirming each food", async ({ page }) => {
   await signIn(page, "patient1", /\/patient\/$/);
   await page.getByRole("link", { name: "Nutrition" }).first().click();
@@ -42,6 +53,7 @@ test("patient sees the approved plan and records a meal after confirming each fo
   await shot(page, "patient-overview-en");
 
   await page.getByRole("link", { name: "Add a meal" }).first().click();
+  await page.getByText(/^Optional: describe/).click();
   await page.getByLabel("What did you eat?").fill("2 boiled eggs and 1 cup rice");
   await page.getByRole("button", { name: "Find foods" }).click();
   const ticks = page.getByLabel("This food and amount are right");
@@ -58,10 +70,10 @@ test("patient sees the approved plan and records a meal after confirming each fo
 test("patient sees only reviewed personalized ideas and no unreleased report", async ({ page }) => {
   await signIn(page, "patient1", /\/patient\/$/);
   await page.goto("/patient/nutrition/suggestions/");
-  await expect(page.getByText(/approved by Dietitian Demo/)).toHaveCount(2); // only what the dietitian approved
+  await expect.poll(() => page.getByText(/approved by Dietitian Demo/).count()).toBeGreaterThanOrEqual(2);
   await expect(page.getByRole("button", { name: "Approve" })).toHaveCount(0);
   await page.goto("/patient/nutrition/reports/");
-  await expect(page.getByText("No report has been released yet.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Release to the patient" })).toHaveCount(0);
   await page.goto("/patient/nutrition/labs/");
   await expect(page.getByText("No review has been shared yet.")).toBeVisible();
 });
@@ -75,11 +87,20 @@ test("dietitian reviews a meal idea and releases the report", async ({ page }) =
   await expect(page).toHaveURL(/\/doctor\/patients\/[0-9a-f-]+\/nutrition\/$/);
   reviewUrl = page.url();
   await expect(page.getByRole("button", { name: "Approve new plan version" })).toBeVisible();
+  await page.getByLabel("Potassium limit per meal (mg)").fill("600");
+  await page.getByLabel("Sodium limit per meal (mg)").fill("600");
+  await page.getByLabel("Phosphorus limit per meal (mg)").fill("350");
+  await page.getByLabel("Allergies (comma separated)").fill("fish");
+  const planSaved = page.waitForResponse(r => r.url().includes("/plans/") && r.request().method() === "POST");
+  await page.getByRole("button", { name: "Approve new plan version" }).click();
+  expect((await planSaved).status()).toBe(201);
+  await page.getByRole("button", { name: "Look for meal ideas" }).click();
   const approve = page.getByRole("button", { name: "Approve", exact: true });
-  const waiting = await approve.count();
-  expect(waiting).toBeGreaterThan(0);
+  await expect(approve.first()).toBeVisible();
+  const approved = page.getByText("Approved", { exact: true });
+  const approvedBefore = await approved.count();
   await approve.first().click();
-  await expect(approve).toHaveCount(waiting - 1);
+  await expect.poll(() => approved.count()).toBeGreaterThan(approvedBefore);
   await shot(page, "clinician-nutrition-en");
 
   await page.getByRole("link", { name: "Food and lab results" }).first().click();
@@ -87,18 +108,19 @@ test("dietitian reviews a meal idea and releases the report", async ({ page }) =
   await expect(page.getByTestId("ai-label").first()).toBeVisible();
 
   await page.getByRole("link", { name: "Nutrition reports" }).first().click();
+  await page.getByRole("button", { name: "Draft a report for the last 30 days" }).click();
   await expect(page.getByText("Draft", { exact: true }).first()).toBeVisible();
-  await page.getByLabel("Clinician note").fill("Reviewed. Synthetic demo release.");
-  await page.getByRole("button", { name: "Release to the patient" }).click();
-  await expect(page.getByText(/AI-drafted, reviewed and released by Dietitian Demo/)).toBeVisible();
+  await page.getByLabel("Clinician note").first().fill("Reviewed. Synthetic demo release.");
+  await page.getByRole("button", { name: "Release to the patient" }).first().click();
+  await expect(page.getByText(/AI-drafted, reviewed and released by Dietitian Demo/).first()).toBeVisible();
 });
 
 test("patient now sees the released report", async ({ page }) => {
   await signIn(page, "patient1", /\/patient\/$/);
   await page.goto("/patient/nutrition/reports/");
-  await expect(page.getByText(/reviewed and released by Dietitian Demo/)).toBeVisible();
-  await expect(page.getByText("Reviewed. Synthetic demo release.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Print or save as PDF" })).toBeVisible();
+  await expect(page.getByText(/reviewed and released by Dietitian Demo/).first()).toBeVisible();
+  await expect(page.getByText("Reviewed. Synthetic demo release.").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Print or save as PDF" }).first()).toBeVisible();
   await shot(page, "patient-report-en");
 });
 

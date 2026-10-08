@@ -43,6 +43,7 @@ import { HOME, useAuth } from "@/lib/auth";
 import { dateOnly, dateTime, label, minutesBetween, timeOnly, withUnit } from "@/lib/format";
 import { setLocale, tr, Tx, useLocale } from "@/lib/i18n";
 import { type Loaded, useAction, useList } from "@/lib/hooks";
+import { notificationHref } from "@/lib/notifications";
 
 // ---------------------------------------------------------------------------------------------
 // Layout
@@ -102,7 +103,7 @@ export function Shell({
   const unreadCount = unread.data?.length ?? 0;
   // A nav item is either a section of this page (#hash) or another page of the same area (path).
   const current = (nav.find((item) => item.href === hash) ?? nav.find((item) => item.href === pathname) ?? nav[0])?.href;
-  const name = user ? user.display_name || user.username : "";
+  const name = user ? tr(user.display_name || user.username) : "";
   const role = user ? tr(ROLE_NAME[user.role] ?? user.role) : "";
   const home = user ? HOME[user.role] : "/";
 
@@ -329,7 +330,7 @@ export function Load<T>({
     return (
       <div role="alert" className="flex flex-wrap items-center gap-3 rounded-md border border-bad/25 bg-bad-soft px-3 py-2 text-sm text-bad">
         <CircleAlert className="size-4 shrink-0" aria-hidden />
-        <span>{from.error}</span>
+        <span>{tr(from.error)}</span>
         <Button variant="outline" size="sm" className="ms-auto" onClick={from.reload}>
           <Tx k="Retry" />
         </Button>
@@ -352,7 +353,7 @@ export function LanguageToggle() {
   return (
     <Button variant="ghost" size="sm" onClick={() => setLocale(locale === "ar" ? "en" : "ar")}>
       <Languages className="size-4" aria-hidden />
-      {locale === "ar" ? "English" : "العربية"}
+      {locale === "ar" ? tr("English") : "العربية"}
     </Button>
   );
 }
@@ -361,7 +362,7 @@ export function ErrorNote({ message }: { message: string | null }) {
   return message ? (
     <p role="alert" className="flex items-center gap-2 text-sm text-bad">
       <CircleAlert className="size-4 shrink-0" aria-hidden />
-      {message}
+      {tr(message)}
     </p>
   ) : null;
 }
@@ -536,7 +537,7 @@ export function SessionTable({ sessions, hrefFor }: { sessions: Session[]; hrefF
           {sessions.map((s) => (
             <TableRow key={s.id}>
               <TableCell>{dateTime(s.started_at ?? s.scheduled_start)}</TableCell>
-              <TableCell>{s.patient_name}</TableCell>
+              <TableCell>{tr(s.patient_name ?? "")}</TableCell>
               <TableCell>
                 <Status value={s.status} />
               </TableCell>
@@ -663,8 +664,8 @@ export function Timeline({
       kind: tr("Action"),
       tone: "bg-brand-soft text-brand",
       icon: ClipboardCheck,
-      title: `${label(a.action_type)} · ${a.author_name}${a.amends ? ` ${tr("(amendment)")}` : ""}`,
-      body: `${a.description} — ${a.reason ? `${tr("Reason:")} ${a.reason}` : tr("No reason documented")}`,
+      title: `${label(a.action_type)} · ${tr(a.author_name)}${a.amends ? ` ${tr("(amendment)")}` : ""}`,
+      body: `${tr(a.description)} — ${a.reason ? `${tr("Reason:")} ${tr(a.reason)}` : tr("No reason documented")}`,
       flag: !a.reason,
       extra: renderAction?.(a),
     })),
@@ -675,7 +676,7 @@ export function Timeline({
       tone: "bg-warn-soft text-warn",
       icon: TriangleAlert,
       title: label(e.event_type),
-      body: `${e.description} — ${e.resolved_at ? `${tr("Resolved:")} ${e.resolution}` : tr("No resolution documented")}`,
+      body: `${tr(e.description)} — ${e.resolved_at ? `${tr("Resolved:")} ${tr(e.resolution)}` : tr("No resolution documented")}`,
       flag: !e.resolved_at,
       extra: renderEvent?.(e),
     })),
@@ -685,8 +686,8 @@ export function Timeline({
       kind: tr("Note"),
       tone: "bg-chrome text-ink-2",
       icon: StickyNote,
-      title: n.author_name,
-      body: n.text,
+      title: tr(n.author_name),
+      body: tr(n.text),
     })),
   ].sort((a, b) => a.at.localeCompare(b.at));
   useLocale();
@@ -725,6 +726,7 @@ export function Timeline({
 }
 
 export function NotificationInbox({ className }: { className?: string }) {
+  const { user } = useAuth();
   const inbox = useList<Notification>("/notifications/");
   const action = useAction();
   const unread = inbox.data?.filter((n) => !n.read_at).length ?? 0;
@@ -751,12 +753,19 @@ export function NotificationInbox({ className }: { className?: string }) {
       <Load from={inbox} empty="No notifications.">
         {(items) => (
           <ul className="divide-y divide-line text-sm">
-            {items.slice(0, 6).map((n) => (
-              <li key={n.id} className={`flex flex-wrap gap-2 py-2 ${n.read_at ? "text-ink-3" : "font-medium"}`}>
-                <span>{tr(n.title)}</span>
-                <time className="ms-auto text-ink-3">{dateTime(n.created_at)}</time>
-              </li>
-            ))}
+            {items.slice(0, 6).map((n) => {
+              const href = user ? notificationHref(n, user.role) : null;
+              const content = <><span>{tr(n.title)}</span><time className="ms-auto text-ink-3">{dateTime(n.created_at)}</time></>;
+              return (
+                <li key={n.id} className={n.read_at ? "text-ink-3" : "font-medium"}>
+                  {href ? (
+                    <Link href={href} className="flex flex-wrap gap-2 rounded-md py-2 hover:bg-brand-soft hover:text-brand focus-visible:outline-2 focus-visible:outline-brand" onClick={() => {
+                      if (!n.read_at) void action.run(() => api.post(`/notifications/${n.id}/read/`)).then(ok => { if (ok) inbox.reload(); });
+                    }}>{content}</Link>
+                  ) : <div className="flex flex-wrap gap-2 py-2">{content}</div>}
+                </li>
+              );
+            })}
           </ul>
         )}
       </Load>
@@ -787,15 +796,15 @@ export function LabTrends({ reports }: { reports: LabReport[] }) {
           onChange={(e) => setChosen(e.target.value)}
         >
           {analytes.map((name) => (
-            <option key={name}>{name}</option>
+            <option key={name} value={name}>{tr(name)}</option>
           ))}
         </select>
         <span className="text-ink-3">
-          {tr("Unit:")} {unit}
-          {low && high ? ` · ${tr("Laboratory reference range")} ${Number(low)}–${Number(high)} ${unit}` : ""}
+          {tr("Unit:")} {tr(unit)}
+          {low && high ? ` · ${tr("Laboratory reference range")} ${Number(low)}–${Number(high)} ${tr(unit)}` : ""}
         </span>
       </div>
-      <div className="h-56 w-full" dir="ltr" role="img" aria-label={`${analyte} trend in ${unit}`}>
+      <div className="h-56 w-full" dir="ltr" role="img" aria-label={`${tr(analyte)} ${tr("trend in")} ${tr(unit)}`}>
         <ResponsiveContainer>
           <LineChart
             data={points.map((p) => ({ date: dateOnly(p.report.collected_at), value: Number(p.result.value) }))}
@@ -804,7 +813,7 @@ export function LabTrends({ reports }: { reports: LabReport[] }) {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" fontSize={12} />
             <YAxis domain={["auto", "auto"]} fontSize={12} width={48} />
-            <Tooltip formatter={(value) => [`${value} ${unit}`, analyte]} />
+            <Tooltip formatter={(value) => [`${value} ${tr(unit)}`, tr(analyte)]} />
             <Line type="linear" dataKey="value" stroke="#176b87" strokeWidth={2} dot />
           </LineChart>
         </ResponsiveContainer>
@@ -813,7 +822,7 @@ export function LabTrends({ reports }: { reports: LabReport[] }) {
         <TableHeader>
           <TableRow>
             <TableHead><Tx k="Collected" /></TableHead>
-            <TableHead>{analyte}</TableHead>
+            <TableHead>{tr(analyte)}</TableHead>
             <TableHead><Tx k="Released to patient" /></TableHead>
           </TableRow>
         </TableHeader>

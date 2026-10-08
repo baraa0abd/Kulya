@@ -10,8 +10,8 @@ const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 const arabic = Noto_Sans_Arabic({ variable: "--font-arabic", subsets: ["arabic"] });
 
 export const metadata: Metadata = {
-  title: "كُلية · Kulya",
-  description: "Dialysis documentation review and session summaries. Synthetic demonstration data only.",
+  title: "كُلية",
+  description: "مراجعة توثيق الغسيل وملخصات الجلسات. بيانات تجريبية مصطنعة فقط.",
 };
 
 // Arabic and right-to-left by default; LocaleBoot applies a saved English preference after load.

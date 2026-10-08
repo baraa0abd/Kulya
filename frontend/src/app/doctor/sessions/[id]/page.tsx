@@ -58,30 +58,30 @@ function ReviewCard({ review, onRequest }: { review: AIReview | undefined; onReq
       <div className="space-y-3 text-sm">
         <div className="flex flex-wrap items-center gap-2">
           <Status value={review.status} />
-          {review.model_name && <span className="text-ink-3">{tr("Model:")} {review.model_name}</span>}
+          {review.model_name && <span className="text-ink-3">{tr("Model:")} {tr(review.model_name)}</span>}
         </div>
         {review.status === "ai_unavailable" && (
           <p role="alert" className="rounded-md border border-bad/25 bg-bad-soft px-3 py-2 text-bad">
-            {tr("AI analysis is unavailable for this review")} ({review.ai_error.map((e) => e.code).join(", ") || "—"}).
+            {tr("AI analysis is unavailable for this review")} ({review.ai_error.map((e) => label(e.code)).join("، ") || "—"}).
             <Tx k="The rule-based findings below are still valid, and you can review the session as usual." />
           </p>
         )}
         {review.output && (
           <>
             <AiLabel text={review.label} />
-            <p>{review.output.summary}</p>
+            <p>{tr(review.output.summary ?? "")}</p>
             {review.output.documentation_gaps.length > 0 && (
               <div>
                 <h3 className="font-medium"><Tx k="Documentation gaps" /></h3>
                 <ul className="list-disc space-y-1 ps-5">
                   {review.output.documentation_gaps.map((gap) => (
                     <li key={gap.finding_id}>
-                      {gap.description}
+                      {tr(gap.description ?? "")}
                       {gap.protocol_reference_ids.map((ref) => {
                         const p = passages.get(ref);
                         return p ? (
                           <span key={ref} className="ml-1 text-ink-3">
-                            [{p.title} v{p.protocol_version} — {p.section}
+                            [{tr(p.title)} · {tr("Version")} {p.protocol_version} — {tr(p.section)}
                             {p.is_synthetic ? `, ${tr("synthetic demo policy")}` : ""}]
                           </span>
                         ) : null;
@@ -96,7 +96,7 @@ function ReviewCard({ review, onRequest }: { review: AIReview | undefined; onReq
                 <h3 className="font-medium"><Tx k="Questions for you" /></h3>
                 <ul className="list-disc ps-5">
                   {review.output.questions_for_doctor.map((q) => (
-                    <li key={q}>{q}</li>
+                    <li key={q}>{tr(q ?? "")}</li>
                   ))}
                 </ul>
               </div>
@@ -111,7 +111,7 @@ function ReviewCard({ review, onRequest }: { review: AIReview | undefined; onReq
             <ul className="list-disc ps-5">
               {review.rule_findings.map((f) => (
                 <li key={f.finding_id}>
-                  <span className="font-medium">{label(f.check)}:</span> {f.description}
+                  <span className="font-medium">{label(f.check)}:</span> {tr(f.description ?? "")}
                 </li>
               ))}
             </ul>
@@ -149,13 +149,13 @@ function SummaryCard({ summary, sessionId, reload }: { summary: AISummary | unde
         {summary.status === "ai_unavailable" && (
           <p role="alert" className="rounded-md border border-bad/25 bg-bad-soft px-3 py-2 text-bad">
             {tr("AI summary generation failed or was rejected by validation")} (
-            {summary.ai_error.map((e) => e.code).join(", ") || "—"}). {tr("The session record is unaffected.")}
+            {summary.ai_error.map((e) => label(e.code)).join("، ") || "—"}). {tr("The session record is unaffected.")}
           </p>
         )}
         {summary.output && (
           <>
             <AiLabel text={summary.label} />
-            <p>{summary.output.clinical_summary}</p>
+            <p>{tr(summary.output.clinical_summary ?? "")}</p>
             {(
               [
                 ["Documented events", summary.output.documented_events],
@@ -170,7 +170,7 @@ function SummaryCard({ summary, sessionId, reload }: { summary: AISummary | unde
                 ) : (
                   <ul className="list-disc ps-5" dir="auto">
                     {items.map((item) => (
-                      <li key={item}>{item}</li>
+                      <li key={item}>{tr(item ?? "")}</li>
                     ))}
                   </ul>
                 )}
@@ -178,7 +178,7 @@ function SummaryCard({ summary, sessionId, reload }: { summary: AISummary | unde
             ))}
             <div className="rounded-md border border-line bg-chrome p-3">
               <h3 className="font-medium"><Tx k="Patient-friendly version (shown to the patient only after release)" /></h3>
-              <p>{summary.output.patient_summary}</p>
+              <p>{tr(summary.output.patient_summary ?? "")}</p>
             </div>
           </>
         )}
@@ -220,7 +220,7 @@ export default function DoctorSessionPage() {
       <Load from={session}>
         {(s) => (
           <div className="grid gap-5 xl:grid-cols-3 xl:grid-rows-[auto_auto_1fr] xl:items-start">
-            <Section id="measurements" icon={Activity} className="xl:col-span-2" title={`${s.patient_name} · ${dateTime(s.started_at ?? s.scheduled_start)}`} action={<Status value={s.status} />}>
+            <Section id="measurements" icon={Activity} className="xl:col-span-2" title={`${tr(s.patient_name)} · ${dateTime(s.started_at ?? s.scheduled_start)}`} action={<Status value={s.status} />}>
               <Measurements session={s} />
             </Section>
             <div className="space-y-5 xl:col-start-3 xl:row-span-3 xl:row-start-1">
@@ -251,7 +251,7 @@ export default function DoctorSessionPage() {
                     name: "nursing_action",
                     label: "About",
                     type: "select",
-                    options: [["", "The whole session"], ...s.nursing_actions.map((a): [string, string] => [a.id, `${label(a.action_type)}: ${a.description.slice(0, 40)}`])],
+                    options: [["", "The whole session"], ...s.nursing_actions.map((a): [string, string] => [a.id, `${label(a.action_type)}: ${tr(a.description).slice(0, 40)}`])],
                   },
                   { name: "text", label: "Feedback", type: "textarea" },
                 ]}
@@ -274,7 +274,7 @@ export default function DoctorSessionPage() {
                       {rows.map((f) => (
                         <li key={f.id} className="py-2">
                           <span className="font-medium">{label(f.kind)}</span> · {dateTime(f.created_at)}
-                          <p dir="auto">{f.text}</p>
+                          <p dir="auto">{tr(f.text ?? "")}</p>
                         </li>
                       ))}
                     </ul>

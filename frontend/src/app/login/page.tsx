@@ -2,14 +2,13 @@
 
 import { Activity } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { z } from "zod";
 
-import { LanguageToggle, requiredText, ZForm } from "@/components/app";
+import { LanguageToggle, ZForm } from "@/components/app";
+import { loginSchema } from "@/lib/validation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { HOME, useAuth } from "@/lib/auth";
 import { Tx, useLocale } from "@/lib/i18n";
 
-const schema = z.object({ username: requiredText("Username"), password: requiredText("Password") });
 
 export default function LoginPage() {
   useLocale();
@@ -31,7 +30,7 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <ZForm
-            schema={schema}
+            schema={loginSchema}
             submitLabel="Sign in"
             fields={[
               { name: "username", label: "Username" },
