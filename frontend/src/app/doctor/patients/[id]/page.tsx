@@ -8,6 +8,7 @@ import { ErrorNote, Load, Section } from "@/components/feedback";
 import { ZForm } from "@/components/forms";
 import { type NavItem, Shell } from "@/components/layout/shell";
 import { Button } from "@/components/ui/button";
+import { LabEntry } from "@/features/clinical/components/lab-entry";
 import { LabTrends } from "@/features/clinical/components/lab-trends";
 import { SessionTable } from "@/features/clinical/components/session-record";
 import { api } from "@/lib/api";
@@ -73,6 +74,7 @@ export default function DoctorPatientPage() {
         <Load from={labs} empty="No laboratory reports.">
           {(rows) => <LabTrends reports={rows} />}
         </Load>
+        <LabEntry patient={id} onSaved={labs.reload} />
         {unreleased.length > 0 && (
           <div className="mt-4 space-y-2 text-sm">
             <p className="font-medium">

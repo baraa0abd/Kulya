@@ -149,12 +149,20 @@ class MockProvider(LLMProvider):
         }
 
 
+def _mock() -> LLMProvider:
+    # Template text must never pass for a model's answer on real records: outside demo mode the
+    # AI features report themselves unavailable instead.
+    if not settings.DEMO_MODE:
+        raise ProviderError("No AI provider is configured.")
+    return MockProvider()
+
+
 def get_provider() -> LLMProvider:
     if settings.LLM_PROVIDER == "mock":
-        return MockProvider()
+        return _mock()
     if settings.LLM_PROVIDER == "anthropic":
         if not settings.ANTHROPIC_API_KEY:
-            logger.warning("LLM_PROVIDER=anthropic but ANTHROPIC_API_KEY is empty; using MockProvider.")
-            return MockProvider()
+            logger.warning("LLM_PROVIDER=anthropic but ANTHROPIC_API_KEY is empty; no model is used.")
+            return _mock()
         return AnthropicProvider()
     raise ImproperlyConfigured(f"Unknown LLM_PROVIDER: {settings.LLM_PROVIDER!r}")

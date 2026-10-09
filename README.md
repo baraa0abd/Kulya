@@ -84,7 +84,7 @@ In both, AI only writes drafts and a clinician approves anything before a patien
 | **AI documentation review** | After a session is completed, a draft explains the gaps and cites the records and protocol passages it used. It goes to the assigned doctor. |
 | **AI session summary** | A draft with a clinician version and a plain-language patient version. The doctor verifies or rejects it, then chooses whether to release it. |
 | **Doctor feedback** | The doctor writes feedback or a clarification request; the nurses on that patient are notified. |
-| **Orders and labs** | The doctor writes versioned dialysis orders, sees lab trends, and releases lab reports to the patient one at a time. |
+| **Orders and labs** | The doctor writes versioned dialysis orders, enters laboratory reports, sees lab trends, and releases lab reports to the patient one at a time. |
 
 ### Renal nutrition
 
@@ -105,6 +105,7 @@ In both, AI only writes drafts and a clinician approves anything before a patien
 - **Access control** — staff see only patients on their care team; patients see only their own released information.
 - **Family sharing** — the patient chooses what a caregiver can see (summaries, appointments, labs, food diary, logging meals for them) and can revoke it.
 - **Record assistant** — a chat on every patient screen that answers from that patient's own released results, summaries, plan and diary, in Arabic or English. Each patient has a separate conversation.
+- **Organization administration** — an administrator opens accounts, registers patients and builds care teams; everyone can change their own password. With `DEMO_MODE=false` the app runs without the demo seed (see [`DEPLOYMENT.md`](DEPLOYMENT.md)).
 - **Notifications and audit trail** — each user has an inbox, and every write and sensitive read is logged.
 - **Arabic right-to-left interface** by default, with an English switch.
 

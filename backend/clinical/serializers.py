@@ -1,4 +1,7 @@
 from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
+
+from core.models import Role, User
 
 from .models import (
     READING_UNITS,
@@ -35,6 +38,24 @@ class PatientBriefSerializer(serializers.ModelSerializer):
         model = Patient
         fields = ["id", "full_name"]
         read_only_fields = fields
+
+
+class PatientRegistrationSerializer(serializers.ModelSerializer):
+    """What an organization administrator enters to register a patient. No clinical data."""
+
+    account = serializers.SlugRelatedField(
+        source="user",
+        slug_field="username",
+        queryset=User.objects.filter(role=Role.PATIENT, is_active=True),
+        required=False,
+        allow_null=True,
+        validators=[UniqueValidator(Patient.objects.all(), message="This account already belongs to a patient.")],
+    )
+
+    class Meta:
+        model = Patient
+        fields = ["id", "mrn", "full_name", "date_of_birth", "account"]
+        read_only_fields = ["id"]
 
 
 class CareAssignmentSerializer(serializers.ModelSerializer):

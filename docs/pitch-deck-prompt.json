@@ -1,0 +1,351 @@
+{
+  "task": "Design the pitch materials for Kulya at the SmartSuli AI Hackathon: (1) a 5-slide deck for a 3-minute pitch with a live demo, (2) a one-page feature board that lists every feature with the reason it exists, (3) four extra slides for the 5-minute final round.",
+  "event": {
+    "name": "SmartSuli AI Hackathon",
+    "organizer": "The Foundation, Sulaimani",
+    "round_1": "3 minutes at our own table in The Foundation Hall. Points are deducted for every second over. Q&A is not timed.",
+    "round_2": "Top 6 teams: 5 minutes on stage.",
+    "judging_focus": [
+      "Problem: the exact, specific problem the idea solves in the city of Sulaimani",
+      "Solution: how well the idea actually solves it",
+      "Use of AI: where and how AI is used; meaningful use scores higher",
+      "Feasibility: whether it could realistically be built in the two days"
+    ]
+  },
+  "product": {
+    "name": "Kulya",
+    "name_arabic": "كُلية",
+    "one_line": "A dialysis care companion for Sulaimani's dialysis units: session documentation, AI-assisted review and renal nutrition, with a clinician between every AI draft and every patient.",
+    "status": "Working demo on synthetic data. Not a medical device and not validated for real patients."
+  },
+  "how_three_minutes_cover_everything": {
+    "principle": "The spoken pitch follows one rehearsed path through the app. Every feature is still shown: on the feature board slide for about 20 seconds, and on a printed copy of the same board that stays on the table for judges to read during Q&A.",
+    "do_not": "Do not make the speaker read the feature list aloud. Do not add slides to Round 1.",
+    "pacing": {
+      "hard_limit_seconds": 180,
+      "rehearsed_target_seconds": 165,
+      "script_length_words": "350 to 380 in total, at a conversational pace of about 130 words a minute",
+      "reason": "A transition or a slow page load easily costs 15 seconds, and overtime loses points."
+    }
+  },
+  "sulaimani_evidence": {
+    "how_to_use": "Use only these figures, exactly as written, each with its source in small text on the same slide. Do not round up, combine or add any other statistic.",
+    "verified": [
+      {
+        "id": "E1",
+        "fact": "In 2017, 203 people were on dialysis in Sulaimaniyah and 79 of them started that year, in a catchment of about 1,310,000 people.",
+        "source": "BMC Nephrology, 2018",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6180455/"
+      },
+      {
+        "id": "E2",
+        "fact": "The same study reports that the date of entry into or exit from dialysis is rarely available, and that data are not collected into a regional repository.",
+        "source": "BMC Nephrology, 2018",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6180455/"
+      },
+      {
+        "id": "E3",
+        "fact": "At Shar Hospital's dialysis center, 50 haemodialysis patients were satisfied with their overall quality of life at 46%, against 67% for 100 healthy controls. 88% of the patients had another chronic disease.",
+        "source": "Health-Related Quality of Life in End-Stage Renal Disease Patients and Healthy Individuals, 2020",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8343940/"
+      },
+      {
+        "id": "E4",
+        "fact": "Among 53 women on haemodialysis at Shar Teaching Hospital, 100% reported fatigue; the authors describe most cases as illiterate housewives on dialysis for more than 10 years.",
+        "source": "UHD Journal of Science and Technology",
+        "url": "https://journals.uhd.edu.iq/index.php/uhdjst/article/view/1345"
+      }
+    ],
+    "our_own_estimate": {
+      "id": "E5",
+      "fact": "About 200 patients at three sessions a week is roughly 30,000 dialysis sessions a year in Sulaimani.",
+      "note": "The team's arithmetic from E1, not a published figure. Label it 'our estimate'."
+    },
+    "gaps": [
+      "No current patient count was found. Keep the placeholder [CURRENT PATIENT COUNT - ask Shar Hospital dialysis unit] visible until the team fills it.",
+      "No Sulaimani study on diet or fluid adherence was found. Do not present figures from other countries as local."
+    ]
+  },
+  "features": {
+    "instruction": "This is the complete feature list. Every item must appear on the feature board with its 'why' in the same row. Keep the wording short; do not drop, merge or invent items. Where a 'why' cites evidence, show the evidence id's source on the board.",
+    "dialysis_sessions": [
+      {
+        "feature": "Session documentation",
+        "what": "The nurse schedules, starts and completes a session and records vitals, machine readings, actions, notes and events.",
+        "why": "Sulaimaniyah's dialysis data is not collected in one place (E2). A structured record per session is the foundation for everything else."
+      },
+      {
+        "feature": "Signed records that cannot be overwritten",
+        "what": "A correction is a new record that points to the original.",
+        "why": "A clinical record has to show what was written at the time, or nobody can trust it later."
+      },
+      {
+        "feature": "Completeness checks",
+        "what": "Fixed rules flag a missing post-treatment weight, an action with no reason, an unresolved event, or a session shorter than prescribed.",
+        "why": "Gaps are caught while the nurse is still at the chair, not weeks later."
+      },
+      {
+        "feature": "AI documentation review",
+        "what": "After a session, an AI draft explains the gaps and cites the records and protocol passages it used.",
+        "why": "The doctor reads one explained page instead of a raw chart, and can check every claim against its source."
+      },
+      {
+        "feature": "AI session summary",
+        "what": "A draft in two versions: one for clinicians and one in plain language for the patient. The doctor verifies it, then decides whether to release it.",
+        "why": "Patients and families rarely get a plain explanation, and many cannot rely on written medical notes (E4)."
+      },
+      {
+        "feature": "Doctor feedback to nurses",
+        "what": "The doctor writes feedback or a clarification request; that patient's nurses are notified.",
+        "why": "Closes the loop between the review and the person who can fix the record."
+      },
+      {
+        "feature": "Dialysis orders",
+        "what": "Versioned prescriptions: duration, fluid removal target, blood flow, access type.",
+        "why": "The session is checked against what was actually prescribed, and old orders are kept."
+      },
+      {
+        "feature": "Lab trends and controlled release",
+        "what": "The doctor sees lab trends and releases each lab report to the patient one at a time.",
+        "why": "The patient sees results only when the doctor is ready to stand behind them."
+      }
+    ],
+    "renal_nutrition": [
+      {
+        "feature": "Food diary by text, voice or photo",
+        "what": "The patient describes, says or photographs a meal; the assistant proposes foods and the patient confirms each one.",
+        "why": "Diet is managed alone between sessions, and typing is a barrier for many patients (E4)."
+      },
+      {
+        "feature": "Nutrient estimates",
+        "what": "The server calculates energy, protein, sodium, potassium, phosphorus, calcium and fluid. An unknown value stays 'not available', never zero.",
+        "why": "A wrong zero for potassium is dangerous; calculation is done by code, not by the AI model."
+      },
+      {
+        "feature": "Meal records on every dashboard",
+        "what": "The latest meals appear on the doctor's, nurse's and patient's dashboards.",
+        "why": "What the patient eats is invisible to the care team today. Now all three see the same thing."
+      },
+      {
+        "feature": "Nutrition plan",
+        "what": "A doctor or dietitian approves per-meal limits and allergies; every change is a new version.",
+        "why": "Limits come from a clinician for this patient, not from the app or the internet."
+      },
+      {
+        "feature": "Meal ideas from the latest blood test",
+        "what": "Recipes are ordered by the latest blood test and compared with the plan. The patient sees an idea only after the doctor approves it.",
+        "why": "Turns a lab number into something the patient can cook, with the doctor's sign-off."
+      },
+      {
+        "feature": "Food-and-lab view",
+        "what": "Diary averages beside lab results, with a descriptive AI draft that never claims a food caused a result.",
+        "why": "Gives the clinician both pictures on one screen without the AI making a diagnosis."
+      },
+      {
+        "feature": "Nutrition reports",
+        "what": "Computed facts plus an AI narrative, released by a clinician and printable.",
+        "why": "A periodic summary the patient can keep and take to appointments."
+      },
+      {
+        "feature": "Nurse observations about eating",
+        "what": "Appetite, nausea or eating difficulty, which the nurse can refer to the doctor and dietitian.",
+        "why": "The nurse sees the patient three times a week and notices first."
+      }
+    ],
+    "across_the_app": [
+      {
+        "feature": "Record assistant",
+        "what": "A chat on every patient screen that answers from that patient's own released results, summaries, plan and diary. Each patient has a separate conversation. It reads results back and does not give medical advice.",
+        "why": "The patient can ask 'what was my urea?' instead of searching screens, in their own language."
+      },
+      {
+        "feature": "Five roles",
+        "what": "Nurse, doctor, renal dietitian, patient and family caregiver, each with their own dashboard.",
+        "why": "Each person sees the work that is theirs and nothing else."
+      },
+      {
+        "feature": "Five sections per screen",
+        "what": "The main dashboards show at most five sections.",
+        "why": "Staff are busy and patients are tired (E4); a screen has to be read in seconds."
+      },
+      {
+        "feature": "Access control",
+        "what": "Staff see only patients on their care team; patients see only their own released information.",
+        "why": "Health data is private. Every request is checked on the server, deny by default."
+      },
+      {
+        "feature": "Family sharing with consent",
+        "what": "The patient chooses what a caregiver sees, can let them record meals, and can stop sharing at any time.",
+        "why": "Families carry much of the care, but the patient stays in control."
+      },
+      {
+        "feature": "Home measurements",
+        "what": "The patient enters weight, blood pressure and heart rate at home, marked as patient-reported.",
+        "why": "Weight between sessions matters in dialysis, and the care team can see it."
+      },
+      {
+        "feature": "Notifications",
+        "what": "An inbox per user: review ready, feedback received, summary released, meal ideas approved.",
+        "why": "Nobody has to keep checking; the next step comes to them."
+      },
+      {
+        "feature": "Audit trail",
+        "what": "Every write and every sensitive read is logged.",
+        "why": "A hospital must be able to answer who saw or changed what."
+      },
+      {
+        "feature": "Arabic right-to-left and English",
+        "what": "Arabic by default with an English switch, including the AI assistant's answers.",
+        "why": "Care happens in the patient's language. Kurdish is the next language to add."
+      },
+      {
+        "feature": "AI safety gate",
+        "what": "Every AI output is validated: cited records must exist, numbers must be in the input, advice wording is rejected. Failed output is replaced by rule-based text.",
+        "why": "In healthcare an AI that invents one number is worse than no AI."
+      }
+    ]
+  },
+  "three_rules": [
+    "AI drafts, humans decide.",
+    "Numbers come from code, not from the model.",
+    "Deny by default."
+  ],
+  "round_1_deck": {
+    "slides": [
+      {
+        "n": 1,
+        "seconds": 20,
+        "title": "In Sulaimani, a dialysis patient's story is written three times a week and read by almost no one",
+        "on_slide": [
+          "Headline: 203 patients on dialysis, 79 new in one year (E1)",
+          "About 30,000 sessions a year (our estimate, E5)",
+          "Quote: data are not collected into a regional repository (E2)"
+        ],
+        "visual": "One very large number, two supporting lines, source line at the bottom.",
+        "script": "One sentence about one patient, then the number. No team introduction beyond the product name."
+      },
+      {
+        "n": 2,
+        "seconds": 15,
+        "title": "Kulya: one record the nurse, the doctor and the patient all trust",
+        "on_slide": ["Nurse documents", "AI drafts", "Doctor approves", "Patient understands"],
+        "visual": "Four-step flow with the doctor's approval drawn as a gate.",
+        "script": "Say what it does, not how. The demo shows the how."
+      },
+      {
+        "n": 3,
+        "seconds": 95,
+        "title": "Live demo",
+        "on_slide": ["1 Nurse", "2 Doctor", "3 Patient"],
+        "visual": "Almost empty: three numbered steps that light up as the demo moves. The screen switches to the app.",
+        "script": "Follow demo_script exactly. For each click, say the reason the feature exists, in one short clause."
+      },
+      {
+        "n": 4,
+        "seconds": 25,
+        "title": "Everything here works today, and each piece exists for a reason",
+        "on_slide": "The feature board: all three groups from 'features', each row as feature plus why.",
+        "visual": "Three columns: Dialysis sessions, Renal nutrition, Across the app. The rows that the demo just showed are highlighted. The three rules sit in a strip along the bottom.",
+        "script": "Do not read the board. Say: every feature on this board is working, each one answers a problem in the unit, and the board is on our table. Then state the three rules."
+      },
+      {
+        "n": 5,
+        "seconds": 15,
+        "title": "Built in two days, ready to pilot in one dialysis unit",
+        "on_slide": [
+          "Working app on synthetic data; not a medical device",
+          "Next step: a supervised pilot in one unit",
+          "The ask: [ONE SPECIFIC ASK - a partner dialysis unit, a clinical advisor, or funding]"
+        ],
+        "visual": "Three lines, team names, QR code to the repository.",
+        "script": "State the ask, say the product name, stop talking."
+      }
+    ],
+    "total_planned_seconds": 170
+  },
+  "demo_script": {
+    "roles": "One speaker narrates. One driver operates the app and never speaks.",
+    "setup_before_judges_arrive": [
+      "Three browser tabs already signed in: nurse, doctor, patient. Never show a login screen.",
+      "A session already documented and one click away from 'complete'.",
+      "Lab-based meal ideas already generated for the demo patient, one left unapproved.",
+      "The real AI provider switched on and tested on the venue network; a recorded video of the same path ready offline.",
+      "Browser zoomed so text is readable from two metres; notifications and other apps closed.",
+      "A reset checklist so the same path can be run again for the next judge."
+    ],
+    "path": [
+      {
+        "step": 1,
+        "seconds": 25,
+        "tab": "Nurse",
+        "action": "Open the prepared session and complete it. The completeness list shows what is missing.",
+        "say": "The nurse documents at the chair, and gaps are caught now, not weeks later.",
+        "features_shown": ["Session documentation", "Completeness checks"]
+      },
+      {
+        "step": 2,
+        "seconds": 35,
+        "tab": "Doctor",
+        "action": "Open the pending review: the AI draft with its cited records. Then open the patient's meal ideas and approve one that is based on the latest blood test.",
+        "say": "The doctor gets one explained page with sources, and nothing reaches the patient until the doctor approves it.",
+        "features_shown": ["AI documentation review", "AI session summary", "Meal ideas from the latest blood test", "Meal records on every dashboard"]
+      },
+      {
+        "step": 3,
+        "seconds": 35,
+        "tab": "Patient",
+        "action": "Show the dashboard: released summary, meal records, the newly approved idea. Open the assistant and ask: what was my urea in the last blood test? Then: is it OK to drink tea today?",
+        "say": "The patient reads it in plain language and can simply ask. The assistant answers from this patient's record only, and for the tea question it shows the plan and points to the care team instead of guessing.",
+        "features_shown": ["Record assistant", "Arabic right-to-left and English", "Notifications", "AI safety gate"]
+      }
+    ],
+    "if_something_breaks": "Do not debug. After 10 seconds say 'here is the same flow recorded' and play the backup video. Do not apologise more than once."
+  },
+  "feature_board_printable": {
+    "format": "One A3 landscape page (also legible as A4), same content and layout as slide 4.",
+    "content": "Every row from 'features': feature name in bold, 'what' in one line, 'why' in one line. Group headings: Dialysis sessions, Renal nutrition, Across the app.",
+    "footer": "The three rules, the four evidence sources with URLs, and the line: working demo on synthetic data, not a medical device."
+  },
+  "round_2_extra_slides": [
+    {
+      "title": "Who the patients are",
+      "on_slide": ["Overall quality-of-life satisfaction 46% for patients against 67% for healthy controls (E3)", "88% have another chronic disease (E3)", "Many cannot rely on written instructions (E4)"]
+    },
+    {
+      "title": "Dialysis sessions: each feature and why",
+      "on_slide": "The dialysis_sessions rows as a two-column table: feature, why."
+    },
+    {
+      "title": "Renal nutrition: each feature and why",
+      "on_slide": "The renal_nutrition rows as a two-column table: feature, why."
+    },
+    {
+      "title": "How an AI draft is checked before anyone sees it",
+      "on_slide": ["Rules and calculations first", "Model writes text only", "Validation: cited records exist, numbers are in the input, no advice wording", "Clinician approves or rejects"],
+      "visual": "Vertical pipeline with a red branch for rejected output."
+    }
+  ],
+  "design": {
+    "format": "16:9 slides, plus the A3 feature board",
+    "language": "English text; show the Arabic name كُلية on the first and last slides. Keep Arabic right-to-left and never mirror or letter-space it.",
+    "palette": {
+      "primary": "#176B87",
+      "note": "Teal from the app. One warm accent for the headline number and for highlighted rows; red only for rejected AI output. White or very light background."
+    },
+    "typography": "One clean sans-serif that supports Arabic. Headline numbers very large. Slides 1, 2, 3 and 5: at most five lines of text. Slide 4 and the board are the only dense layouts: use a strict grid, bold feature names and a lighter 'why' line so they can be scanned.",
+    "rules": [
+      "Each slide title is the conclusion of that slide, not a label.",
+      "Every statistic carries its source in small text on the same slide.",
+      "No stock photos of patients, no hospital clip art, no decorative icons.",
+      "Do not invent statistics, quotes, partner logos or team names. Leave bracketed placeholders visible.",
+      "No patient names or realistic-looking patient data."
+    ]
+  },
+  "deliverables": [
+    "Round 1 deck: 5 slides, with the script line and seconds for each slide in the speaker notes",
+    "The printable feature board",
+    "A one-page demo run sheet for the driver, built from demo_script",
+    "Round 2 extension: 4 slides",
+    "A final sources slide listing the evidence URLs"
+  ]
+}

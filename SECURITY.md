@@ -47,13 +47,26 @@ is not. It is not a claim of compliance with any health-data regulation.
 - Text in a meal description or photo is treated as data; the recognition schema has no field
   through which a model could set a nutrient value (tested).
 
+### Organization administration
+
+- An organization administrator opens accounts (staff, patient, caregiver only: never another
+  administrator), registers patients and manages care teams, all limited to their own
+  organization and all audited. The registry shows identity (record number, name, date of birth)
+  and no clinical record.
+- The first administrator is created on the server with `manage.py create_org_admin`.
+- Outside `DEMO_MODE`, the offline template provider is refused, so template text is never
+  presented as AI output on real records, and `seed_demo` refuses to run.
+
 ## Known gaps (not done)
 
 - Tokens are kept in `sessionStorage`, readable by any script on the page. HttpOnly cookie
   sessions with CSRF protection would be stronger.
-- No multi-factor authentication, account lockout, password reset, or token revocation list.
+- No multi-factor authentication, account lockout, password reset by email, or token revocation
+  list. Users can change their own password; tokens issued before the change stay valid until
+  they expire. A new account is not forced to change its first password.
 - No encryption at rest beyond what the database host provides; no field-level encryption.
-- Rate limits use Django's per-process cache, so they are not shared across workers.
+- Rate limits use Django's per-process cache unless `CACHE_URL` points at Redis (docker compose
+  sets it), in which case they are shared across workers.
 - The forbidden-wording check is a substring list. It will miss novel phrasing; the reviewing
   doctor is the real control.
 - Dates and clock times in AI prose are not checked against the record.

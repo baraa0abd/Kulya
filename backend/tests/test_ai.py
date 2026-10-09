@@ -308,7 +308,7 @@ def test_missing_api_key_falls_back_to_mock(settings, caplog) -> None:
     from ai.provider import get_provider
 
     settings.LLM_PROVIDER, settings.ANTHROPIC_API_KEY = "anthropic", ""
-    assert isinstance(get_provider(), MockProvider) and "using MockProvider" in caplog.text
+    assert isinstance(get_provider(), MockProvider) and "no model is used" in caplog.text
 
 
 def test_worker_unavailable_does_not_block_documentation(api, nurse, in_progress, settings, monkeypatch) -> None:

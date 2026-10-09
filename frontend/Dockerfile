@@ -5,7 +5,9 @@ RUN npm ci
 COPY . .
 # The /api proxy target is fixed at build time (Next.js bakes rewrites into the build).
 ARG BACKEND_URL=http://backend:8000
-ENV BACKEND_URL=$BACKEND_URL NEXT_TELEMETRY_DISABLED=1
+# "false" removes the synthetic-data labels from the built app.
+ARG NEXT_PUBLIC_DEMO_MODE=true
+ENV BACKEND_URL=$BACKEND_URL NEXT_PUBLIC_DEMO_MODE=$NEXT_PUBLIC_DEMO_MODE NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 FROM node:24-alpine

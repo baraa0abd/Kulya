@@ -58,6 +58,8 @@ class Command(BaseCommand):
     help = "Create the synthetic demo organization, accounts, patients, sessions, labs and protocols."
 
     def handle(self, *args, **options) -> None:
+        if not settings.DEMO_MODE:
+            raise CommandError("seed_demo creates synthetic patients; it only runs with DEMO_MODE=true.")
         password = os.environ.get("DEMO_PASSWORD")
         if not password:
             raise CommandError("Set DEMO_PASSWORD in the environment (see .env.example).")

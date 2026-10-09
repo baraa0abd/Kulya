@@ -1,7 +1,7 @@
 # Deployment
 
-This describes how to run the demo stack. It is not a production runbook: the system has not been
-validated for real patients (see `SECURITY.md`).
+This describes how to run the stack, as a demo and with real records. The software has not been
+clinically validated; "Before real patients" below lists what code cannot settle.
 
 ## Docker Compose
 
@@ -36,6 +36,44 @@ Everything is an environment variable; see `.env.example`. For a non-demo deploy
 
 The frontend's API target (`BACKEND_URL`) is fixed at image build time (`docker compose` passes it
 as a build argument).
+
+## Running with real records
+
+With `DEMO_MODE=false` nothing synthetic is created, the "synthetic data" labels are removed from
+the built app, `seed_demo` refuses to run, and AI features report themselves unavailable unless a
+real provider is configured (the offline template provider is never used on real records).
+
+```bash
+# .env: DEMO_MODE=false, DJANGO_DEBUG=false, DJANGO_SECRET_KEY, POSTGRES_PASSWORD, DJANGO_ALLOWED_HOSTS,
+#       LLM_PROVIDER=anthropic, ANTHROPIC_API_KEY, SECURE_SSL_REDIRECT=true, SECURE_HSTS_SECONDS=31536000
+docker compose up --build -d
+docker compose exec -e ADMIN_PASSWORD backend python manage.py create_org_admin "Unit name" admin_username
+```
+
+The administrator then signs in and, on the **Administration** screen:
+
+1. opens an account for each nurse, doctor, dietitian, patient and caregiver (each changes their
+   first password under **My account**);
+2. registers each patient and links the patient's account;
+3. adds staff to each patient's care team. Staff see a patient only while on that team.
+
+Clinical data is entered by the care team in the app: the doctor writes the dialysis order and
+enters laboratory reports on the patient page, nurses document sessions, patients keep the diary.
+
+Not provided: importing records from another system, password reset by email, and a screen for
+loading a clinician-approved documentation protocol (until one is loaded, the AI review states
+that no protocol reference is available).
+
+## Before real patients
+
+These are decisions and checks for the clinic and its regulator, not code:
+
+- a clinical lead who approves the rules, prompts, Arabic wording and the food catalogue;
+- an evaluation of real-model output on de-identified records before clinicians rely on it;
+- a data-protection assessment, including that record text is sent to the model provider;
+- whatever medical-device or health-software clearance applies locally;
+- hardened hosting with TLS, tested backup and restore, monitoring and incident response;
+- a security review covering the known gaps in `SECURITY.md` (no MFA, tokens in session storage).
 
 ## Database
 

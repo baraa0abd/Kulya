@@ -7,7 +7,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from ai.views import AIReviewViewSet, AISummaryViewSet
 from assistant.views import ChatView
 from clinical import views as clinical
-from core.views import AuditViewSet, HealthView, LoginView, MeView
+from core.views import AccountViewSet, AuditViewSet, HealthView, LoginView, MeView, PasswordView
 from workflow.views import DoctorFeedbackViewSet, NotificationViewSet, ReviewTaskViewSet
 
 router = DefaultRouter()
@@ -28,6 +28,8 @@ router.register("doctor/feedback", DoctorFeedbackViewSet, basename="doctor-feedb
 router.register("doctor/review-tasks", ReviewTaskViewSet, basename="review-task")
 router.register("notifications", NotificationViewSet, basename="notification")
 router.register("audit", AuditViewSet, basename="audit")
+router.register("admin/accounts", AccountViewSet, basename="admin-account")
+router.register("admin/patients", clinical.PatientRegistryViewSet, basename="admin-patient")
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -35,6 +37,7 @@ urlpatterns = [
     path("api/auth/login/", LoginView.as_view()),
     path("api/auth/refresh/", TokenRefreshView.as_view()),
     path("api/auth/me/", MeView.as_view()),
+    path("api/auth/password/", PasswordView.as_view()),
     path("api/nutrition/", include("nutrition.urls")),
     path("api/assistant/chat/", ChatView.as_view()),
     path("api/", include(router.urls)),

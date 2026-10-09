@@ -141,6 +141,11 @@ REST_FRAMEWORK = {
         "ai": os.environ.get("THROTTLE_AI", "30/min"),
     },
 }
+# Rate limits are counted in the cache. One Redis cache makes them hold across server processes.
+if os.environ.get("CACHE_URL"):
+    CACHES = {
+        "default": {"BACKEND": "django.core.cache.backends.redis.RedisCache", "LOCATION": os.environ["CACHE_URL"]}
+    }
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(os.environ.get("ACCESS_TOKEN_MINUTES", "15"))),
     "REFRESH_TOKEN_LIFETIME": timedelta(hours=int(os.environ.get("REFRESH_TOKEN_HOURS", "12"))),

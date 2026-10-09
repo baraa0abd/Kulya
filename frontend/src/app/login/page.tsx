@@ -7,6 +7,7 @@ import { LanguageToggle } from "@/components/feedback";
 import { ZForm } from "@/components/forms";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { HOME, useAuth } from "@/lib/auth";
+import { DEMO } from "@/lib/format";
 import { Tx, useLocale } from "@/lib/i18n";
 import { loginSchema } from "@/lib/validation";
 
@@ -27,7 +28,13 @@ export default function LoginPage() {
             </h1>
           </CardTitle>
           <CardDescription>
-            <Tx k="Sign in. This demonstration runs on synthetic data only and is not a medical device." />
+            <Tx
+              k={
+                DEMO
+                  ? "Sign in. This demonstration runs on synthetic data only and is not a medical device."
+                  : "Sign in. Decision support only. Not a medical device."
+              }
+            />
           </CardDescription>
         </CardHeader>
         <CardContent>

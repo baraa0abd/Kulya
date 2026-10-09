@@ -6,7 +6,8 @@ import { HOME, useAuth } from "@/lib/auth";
 import { useList } from "@/lib/hooks";
 import { tr, Tx, useLocale } from "@/lib/i18n";
 import { type Notification } from "@/lib/types";
-import { Activity, Bell, LogOut, type LucideIcon, UserRound } from "lucide-react";
+import { DEMO } from "@/lib/format";
+import { Activity, Bell, KeyRound, LogOut, type LucideIcon, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSyncExternalStore } from "react";
@@ -16,6 +17,7 @@ const ROLE_NAME: Record<string, string> = {
   patient: "Patient",
   family: "Family caregiver",
   dietitian: "Renal dietitian",
+  org_admin: "Administrator",
 };
 
 const ROLE_AREA: Record<string, string> = {
@@ -24,6 +26,7 @@ const ROLE_AREA: Record<string, string> = {
   patient: "Patient companion",
   family: "Family access",
   dietitian: "Nutrition workspace",
+  org_admin: "Administration",
 };
 
 export interface NavItem {
@@ -111,7 +114,9 @@ export function Shell({
         </Link>
         <p className="mx-4 mb-4 flex items-center gap-2 rounded-md bg-chrome px-3 py-2 text-xs text-ink-2">
           <span className="size-2 shrink-0 rounded-full bg-jade" aria-hidden />
-          {tr("Synthetic demonstration data")}
+          {tr(
+            DEMO ? "Synthetic demonstration data" : "Decision support only. Not a medical device.",
+          )}
         </p>
         <nav aria-label={tr("Sections")} className="flex-1 space-y-1 overflow-y-auto px-3">
           {nav.map((item) => link(item, false))}
@@ -166,6 +171,15 @@ export function Shell({
                 </Link>
               )}
               <LanguageToggle />
+              {user && (
+                <Link
+                  href="/account/"
+                  aria-label={tr("My account")}
+                  className="flex size-9 items-center justify-center rounded border border-line bg-white text-ink-2 hover:bg-chrome"
+                >
+                  <KeyRound className="size-4" aria-hidden />
+                </Link>
+              )}
               {user && (
                 <span data-testid="whoami" className="hidden text-sm text-ink-2 md:inline">
                   {name} · {role}

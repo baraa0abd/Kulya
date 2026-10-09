@@ -14,7 +14,7 @@ import { type z } from "zod";
 export interface FieldSpec {
   name: string;
   label: string;
-  type?: "text" | "password" | "number" | "textarea" | "select" | "datetime-local";
+  type?: "text" | "password" | "number" | "textarea" | "select" | "datetime-local" | "date";
   options?: [value: string, text: string][];
   hint?: string;
 }

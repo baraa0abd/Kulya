@@ -42,3 +42,6 @@ export const weekOf = (iso: string) => {
   day.setDate(day.getDate() - ((day.getDay() + 6) % 7));
   return day.toISOString().slice(0, 10);
 };
+
+/** False only in a build made with NEXT_PUBLIC_DEMO_MODE=false: no demo seed, real records. */
+export const DEMO = process.env.NEXT_PUBLIC_DEMO_MODE !== "false";
