@@ -103,6 +103,8 @@ export interface Recommendation {
   recipe: Recipe;
   category: string;
   personalized: boolean;
+  /** Ordered by the latest laboratory report: only a doctor may approve it. */
+  lab_based: boolean;
   reasoning_summary: string;
   nutrient_estimates: Nutrients;
   limitations: string[];

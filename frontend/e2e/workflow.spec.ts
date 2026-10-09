@@ -139,6 +139,7 @@ test("patient sees the released summary and nothing clinical", async ({ page }) 
     await page.getByText("Your dialysis session was recorded.").count(),
   ).toBeGreaterThanOrEqual(3);
   await expect(page.getByText("AI documentation review")).toHaveCount(0);
+  await page.getByRole("link", { name: "Family and home" }).first().click();
   await expect(page.getByRole("heading", { name: "Family sharing" })).toBeVisible();
 });
 

@@ -180,6 +180,7 @@ class Command(BaseCommand):
                 ("Hemoglobin", Decimal("10.6") - drift, "g/dL", "10.0", "12.0"),
                 ("Phosphate", Decimal("5.1") + drift, "mg/dL", "3.5", "5.5"),
                 ("Albumin", Decimal("3.8"), "g/dL", "3.5", "5.0"),
+                ("Urea", Decimal("21.0") + drift, "mmol/L", "2.5", "7.8"),
             ]
             LaboratoryResult.objects.bulk_create(
                 LaboratoryResult(report=report, analyte=a, value=v, unit=u, reference_low=lo, reference_high=hi)

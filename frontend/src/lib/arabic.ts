@@ -409,6 +409,21 @@ export function arabicRules(translate: (text: string) => string): TranslationRul
         `القيمة التقديرية لـ${code(nutrient)} (${value}) تتجاوز حد الخطة (${limit}) لكل وجبة.`,
     ],
     [
+      /^Latest (.+) result (\S+) (\S+) is (above|in the upper part of) the laboratory reference range (\S+) to (\S+)\.$/,
+      (analyte, value, unit, position, low, high) =>
+        `آخر نتيجة ${translate(analyte)} (${value} ${translate(unit)}) ${position === "above" ? "أعلى من" : "في الجزء الأعلى من"} النطاق المرجعي للمختبر (${low} إلى ${high}).`,
+    ],
+    [
+      /^Estimated (.+) (\S+) is in the (lower|higher) half of the listed recipes\.$/,
+      (nutrient, value, half) =>
+        `القيمة التقديرية لـ${code(nutrient)} (${value}) ضمن النصف ${half === "lower" ? "الأدنى" : "الأعلى"} من الوصفات المعروضة.`,
+    ],
+    [
+      /^(.+) is not available for this recipe, so it cannot be compared\.$/,
+      (nutrient) => `قيمة ${code(nutrient)} غير متوفرة لهذه الوصفة، لذلك لا يمكن مقارنتها.`,
+    ],
+    [/^Laboratory report collected (\S+)$/, (day) => `تقرير مخبري بتاريخ ${day}`],
+    [
       /^Contains a documented allergen: (.+)\.$/,
       (words) => `يحتوي على مسبب حساسية موثّق: ${words.split(", ").map(translate).join("، ")}.`,
     ],

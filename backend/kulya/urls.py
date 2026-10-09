@@ -5,6 +5,7 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from ai.views import AIReviewViewSet, AISummaryViewSet
+from assistant.views import ChatView
 from clinical import views as clinical
 from core.views import AuditViewSet, HealthView, LoginView, MeView
 from workflow.views import DoctorFeedbackViewSet, NotificationViewSet, ReviewTaskViewSet
@@ -35,6 +36,7 @@ urlpatterns = [
     path("api/auth/refresh/", TokenRefreshView.as_view()),
     path("api/auth/me/", MeView.as_view()),
     path("api/nutrition/", include("nutrition.urls")),
+    path("api/assistant/chat/", ChatView.as_view()),
     path("api/", include(router.urls)),
     path("api/schema/", SpectacularAPIView.as_view(permission_classes=[]), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema", permission_classes=[])),

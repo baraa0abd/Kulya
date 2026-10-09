@@ -4,10 +4,12 @@ proposes foods and writes descriptive drafts, and every draft waits for a clinic
 import hashlib
 import json
 from datetime import date, timedelta
+from statistics import median
 
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.utils import timezone
+from rest_framework.exceptions import PermissionDenied
 
 from ai.gateway import call_model
 from clinical.models import DialysisSession, LaboratoryResult, Patient
@@ -184,21 +186,60 @@ def approve_plan(patient: Patient, clinician: User, data: dict) -> NutritionPlan
     return plan
 
 
+def _lab_basis(patient: Patient):
+    """The latest laboratory report and its results worth ordering recipes by (possibly none)."""
+    report = patient.lab_reports.order_by("-collected_at").first()
+    if report is None:
+        return None, []
+    day = timezone.localtime(report.collected_at).date()
+    results = [r for r in lab_facts(patient, day, day) if r["report_id"] == str(report.id)]
+    watch = engine.lab_watch(results)
+    return (report if watch else None), watch
+
+
 def suggest(patient: Patient, user: User) -> list[MealRecommendation]:
-    """Compare catalogue recipes with the approved plan (fixed rules), then ask the model only to
-    word the result. Without a plan the ideas are general and say so. Idempotent per plan."""
+    """Compare catalogue recipes with the approved plan and the latest laboratory report (fixed
+    rules), then ask the model only to word the result. Without either, the ideas are general and
+    say so. Idempotent per plan and laboratory report."""
     plan = active_plan(patient)
+    report, watch = _lab_basis(patient)
     limits = {"allergies": plan.allergies, "prescribed_targets": plan.prescribed_targets} if plan else None
-    done = patient.meal_recommendations.filter(nutrition_plan=plan).values_list("recipe_id", flat=True)
+    done = patient.meal_recommendations.filter(nutrition_plan=plan, lab_report=report)
     picks = []
-    for recipe in Recipe.objects.exclude(pk__in=list(done)):
+    for recipe in Recipe.objects.exclude(pk__in=list(done.values_list("recipe_id", flat=True))):
         category, reasons = engine.classify_recipe(recipe.nutritional_estimate, recipe.allergens, limits)
         if category:  # None = contains a documented allergen: never offered
             picks.append((recipe, category, reasons))
+    if watch:
+        medians = {}
+        for nutrient in {lab["nutrient"] for lab in watch}:
+            known = [v for r in Recipe.objects.all() if (v := r.nutritional_estimate.get(nutrient)) is not None]
+            if known:
+                medians[nutrient] = median(known)
+        # Rows are listed newest first, so create the lowest value last: it is then shown first,
+        # and a recipe with no value is shown last.
+        first = watch[0]["nutrient"]
+        picks.sort(
+            key=lambda p: (p[0].nutritional_estimate.get(first) is None, p[0].nutritional_estimate.get(first) or 0),
+            reverse=True,
+        )
+        picks = [
+            (
+                recipe,
+                category,
+                [r for r in reasons if "not personalized" not in r]
+                + engine.lab_reasons(recipe.nutritional_estimate, watch, medians),
+            )
+            for recipe, category, reasons in picks
+        ]
+    personalized = plan is not None or report is not None
     explanations, limitations = {}, [CATALOG_LIMITATION, "This is not a diet order. Ask your care team first."]
-    if plan and picks:
+    if personalized and picks:
         payload = {
-            "plan": {**limits, "dietary_preferences": plan.dietary_preferences, "guidance": plan.guidance},
+            "plan": {**limits, "dietary_preferences": plan.dietary_preferences, "guidance": plan.guidance}
+            if plan
+            else None,
+            "laboratory_results": watch,
             "recipes": [
                 {"id": str(r.id), "name": r.name, "nutrients": r.nutritional_estimate, "category": c, "reasons": why}
                 for r, c, why in picks
@@ -211,26 +252,31 @@ def suggest(patient: Patient, user: User) -> list[MealRecommendation]:
             limitations = [*limitations, "The AI explanation was unavailable; the reasons shown are rule-based."]
         else:
             explanations = {e["recipe_id"]: e["text"] for e in output["explanations"]}
+    sources = [f"Laboratory report collected {report.collected_at.date().isoformat()}"] if report else []
     created = [
         MealRecommendation.objects.create(
             patient=patient,
             nutrition_plan=plan,
+            lab_report=report,
             recipe=recipe,
             category=category,
-            personalized=plan is not None,
+            personalized=personalized,
             reasoning_summary=explanations.get(str(recipe.id), " ".join(reasons)),
             nutrient_estimates=recipe.nutritional_estimate,
             limitations=limitations,
-            source_references=[recipe.source],
+            source_references=[recipe.source, *sources],
         )
         for recipe, category, reasons in picks
     ]
     if created:
-        audit(user, "meal_suggestions_generated", None, patient=patient, count=len(created), plan=bool(plan))
-        for dietitian in assigned_professionals(patient, Role.DIETITIAN) if plan else ():
-            notify(
-                dietitian, "nutrition_review", "Meal suggestions await review", None, f"sug:{created[0].id}", patient
-            )
+        audit(
+            user, "meal_suggestions_generated", None, patient=patient, count=len(created), plan=bool(plan),
+            lab_based=bool(report),
+        )  # fmt: skip
+        reviewers = list(assigned_professionals(patient, Role.DIETITIAN)) if plan else []
+        reviewers += list(assigned_professionals(patient, Role.DOCTOR)) if report else []
+        for reviewer in reviewers:
+            notify(reviewer, "meal_ideas", "Meal suggestions await review", None, f"sug:{created[0].id}", patient)
     return created
 
 
@@ -245,9 +291,14 @@ def _review(obj, clinician: User, approve: bool, action: str, patient: Patient) 
 @transaction.atomic
 def review_recommendation(pk, clinician: User, approve: bool) -> MealRecommendation:
     rec = MealRecommendation.objects.select_for_update(of=("self",)).select_related("patient").get(pk=pk)
+    if rec.lab_report_id and clinician.role != Role.DOCTOR:
+        raise PermissionDenied("A doctor approves meal ideas that quote laboratory results.")
     _review(rec, clinician, approve, "meal_recommendation", rec.patient)
     rec.reviewed_at = timezone.now()
     rec.save()
+    if approve and rec.patient.user:
+        basis = rec.lab_report_id or rec.nutrition_plan_id
+        notify(rec.patient.user, "meal_ideas", "New meal ideas are available", None, f"sugok:{basis}", rec.patient)
     return rec
 
 

@@ -121,12 +121,16 @@ class PlanSerializer(serializers.ModelSerializer):
 class RecommendationSerializer(serializers.ModelSerializer):
     recipe = RecipeSerializer(read_only=True)
     reviewed_by_name = serializers.CharField(source="reviewed_by.display_name", read_only=True, default=None)
+    lab_based = serializers.SerializerMethodField()
+
+    def get_lab_based(self, rec: MealRecommendation) -> bool:
+        return rec.lab_report_id is not None
 
     class Meta:
         model = MealRecommendation
-        fields = ["id", "patient", "nutrition_plan", "recipe", "category", "personalized", "reasoning_summary",
-                  "nutrient_estimates", "limitations", "source_references", "review_status", "reviewed_by_name",
-                  "reviewed_at", "created_at"]  # fmt: skip
+        fields = ["id", "patient", "nutrition_plan", "recipe", "category", "personalized", "lab_based",
+                  "reasoning_summary", "nutrient_estimates", "limitations", "source_references", "review_status",
+                  "reviewed_by_name", "reviewed_at", "created_at"]  # fmt: skip
         read_only_fields = fields
 
 

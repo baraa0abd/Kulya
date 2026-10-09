@@ -76,6 +76,49 @@ def diary_summary(meals: list[dict], start: date, end: date) -> dict:
     }
 
 
+# Laboratory analyte (name fragment) -> the recipe nutrient shown against it.
+LAB_NUTRIENT = {"potassium": "potassium_mg", "phosph": "phosphorus_mg", "sodium": "sodium_mg"}
+# ponytail: ordering heuristic, not a clinical limit. A doctor approves every laboratory-based idea;
+# replace with thresholds from the plan if the care team starts writing them there.
+UPPER_SHARE = 0.75
+
+
+def lab_watch(results: list[dict]) -> list[dict]:
+    """Results of one laboratory report that are above, or in the upper part of, the laboratory's
+    own reference range. Only the reported range is used: no limit is invented here."""
+    watch = []
+    for result in results:
+        nutrient = next((n for needle, n in LAB_NUTRIENT.items() if needle in result["analyte"].lower()), None)
+        low, high = result.get("reference_low"), result.get("reference_high")
+        if nutrient is None or low is None or high is None or high <= low:
+            continue
+        if result["value"] > high:
+            position = "above"
+        elif result["value"] >= low + UPPER_SHARE * (high - low):
+            position = "in the upper part of"
+        else:
+            continue
+        watch.append({**result, "nutrient": nutrient, "position": position})
+    return watch
+
+
+def lab_reasons(nutrients: dict, watch: list[dict], medians: dict[str, float]) -> list[str]:
+    """Where a recipe sits among the listed recipes for each watched nutrient. Descriptive only."""
+    reasons = []
+    for lab in watch:
+        nutrient, value = lab["nutrient"], nutrients.get(lab["nutrient"])
+        reasons.append(
+            f"Latest {lab['analyte']} result {lab['value']} {lab['unit']} is {lab['position']} the laboratory "
+            f"reference range {lab['reference_low']} to {lab['reference_high']}."
+        )
+        if value is None or nutrient not in medians:
+            reasons.append(f"{nutrient} is not available for this recipe, so it cannot be compared.")
+        else:
+            half = "lower" if value <= medians[nutrient] else "higher"
+            reasons.append(f"Estimated {nutrient} {value} is in the {half} half of the listed recipes.")
+    return reasons
+
+
 def window_before(collected: date, days: int = 7) -> tuple[date, date]:
     """The diary days that precede a laboratory sample (the sample day itself excluded)."""
     return collected - timedelta(days=days), collected - timedelta(days=1)

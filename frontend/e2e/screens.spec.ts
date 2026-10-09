@@ -54,6 +54,7 @@ for (const role of ["patient1", "doctor1", "nurse1", "dietitian1", "family1", "f
       routes = [
         "/",
         "/patient/",
+        ...(role.startsWith("patient") ? ["/patient/home/"] : []),
         ...["", "add/", "history/", "suggestions/", "labs/", "reports/"].map(
           (s) => `/patient/nutrition/${s}`,
         ),
@@ -68,7 +69,9 @@ for (const role of ["patient1", "doctor1", "nurse1", "dietitian1", "family1", "f
       const patient = role === "dietitian1" ? data[0].patient : data.results[0].id;
       routes = [
         `/${role.replace(/1$/, "")}/`,
-        ...["", "lab-review/", "reports/"].map((s) => `/doctor/patients/${patient}/nutrition/${s}`),
+        ...["", "meals/", "lab-review/", "reports/"].map(
+          (s) => `/doctor/patients/${patient}/nutrition/${s}`,
+        ),
       ];
       if (role === "doctor1") routes.push(`/doctor/patients/${patient}/`);
       if (role !== "dietitian1") {
@@ -101,6 +104,7 @@ test("patient blank measurement is blocked, boundary errors do not save, valid m
   page,
 }) => {
   await login(page, "patient1");
+  await page.goto("/patient/home/");
   const form = page
     .getByRole("button", { name: "Submit measurement" })
     .locator("xpath=ancestor::form");
@@ -244,7 +248,9 @@ test("patient is redirected away from every staff route", async ({ page }) => {
     `/doctor/patients/${id}/`,
     `/doctor/sessions/${id}/`,
     `/nurse/sessions/${id}/`,
-    ...["", "reports/", "lab-review/"].map((s) => `/doctor/patients/${id}/nutrition/${s}`),
+    ...["", "meals/", "reports/", "lab-review/"].map(
+      (s) => `/doctor/patients/${id}/nutrition/${s}`,
+    ),
   ]) {
     await page.goto(route);
     await expect(page).toHaveURL(/\/patient\/$/);

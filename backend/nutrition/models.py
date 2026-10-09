@@ -152,6 +152,11 @@ class MealRecommendation(UUIDModel):
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="meal_recommendations")
     nutrition_plan = models.ForeignKey(NutritionPlan, null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     recipe = models.ForeignKey(Recipe, on_delete=models.PROTECT, related_name="+")
+    # Set when the idea was ordered by this laboratory report. Such an idea quotes laboratory values,
+    # so only a doctor may approve it for the patient.
+    lab_report = models.ForeignKey(
+        "clinical.LaboratoryReport", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
     category = models.CharField(max_length=30)  # compatible | check_portion | needs_dietitian_review | general
     personalized = models.BooleanField(default=False)  # false = general idea, no approved plan
     reasoning_summary = models.TextField(blank=True)

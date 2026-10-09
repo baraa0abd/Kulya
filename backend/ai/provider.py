@@ -94,6 +94,10 @@ class MockProvider(LLMProvider):
             from nutrition.ai import mock_response  # lazy: nutrition imports this module
 
             return mock_response(prompt_id, payload, image)
+        if prompt_id.startswith("patient_chat"):
+            from assistant.chat import mock_answer  # lazy: assistant imports the gateway
+
+            return {"answer": mock_answer(payload)}
         ctx = payload["context"]
         session_id = ctx["session"]["id"]
         if prompt_id.startswith("review"):

@@ -250,6 +250,7 @@ const BASE_AR: Record<string, string> = {
   "Session of": "جلسة",
   released: "أُتيح في",
   "Upcoming sessions": "الجلسات القادمة",
+  "Dialysis sessions": "جلسات الغسيل",
   "No upcoming sessions to show.": "لا توجد جلسات قادمة.",
   "Completed sessions": "الجلسات المكتملة",
   "Sessions per week, then the most recent ones.": "عدد الجلسات أسبوعياً ثم أحدثها.",
@@ -272,6 +273,7 @@ const BASE_AR: Record<string, string> = {
   "Summaries and appointments": "الملخصات والمواعيد",
   "Summaries, appointments and released lab results": "الملخصات والمواعيد والتحاليل المتاحة",
   "Home measurements": "قياسات منزلية",
+  "Family and home": "العائلة والمنزل",
   "Measurements you enter are marked as patient-reported for your care team.":
     "القياسات التي تدخلها تُعلَّم لفريقك الطبي بأنها من المريض.",
   "Submit measurement": "إرسال القياس",
@@ -405,6 +407,10 @@ const BASE_AR: Record<string, string> = {
   "Written and approved by a doctor or dietitian. The app never changes it.":
     "كتبها واعتمدها طبيب أو أخصائي تغذية. التطبيق لا يغيّرها أبداً.",
   "Meal diary": "سجل الوجبات",
+  "Meal records": "سجلات الوجبات",
+  "The latest meals in the food diary, as the patient recorded them.":
+    "أحدث الوجبات في سجل الطعام كما سجّلها المريض.",
+  "Open the full meal diary": "فتح سجل الوجبات كاملاً",
   "The last 30 days, newest first.": "آخر ٣٠ يوماً، الأحدث أولاً.",
   "No meals recorded in this period.": "لا توجد وجبات مسجَّلة في هذه الفترة.",
   "Recorded by": "سجّلها",
@@ -467,11 +473,27 @@ const BASE_AR: Record<string, string> = {
   "The offline demo provider cannot read photos. Type or say what was eaten.":
     "المزوّد التجريبي غير المتصل لا يستطيع قراءة الصور. اكتب أو قل ما تم أكله.",
   "Meal ideas": "أفكار للوجبات",
-  "Recipes are compared with the approved plan by fixed rules. A personalized idea is shown to the patient only after a doctor or dietitian approves it.":
-    "تُقارَن الوصفات بالخطة المعتمدة وفق قواعد ثابتة. لا تُعرض الفكرة المخصَّصة على المريض إلا بعد اعتماد طبيب أو أخصائي تغذية.",
+  "Recipes are compared with the approved plan and the latest blood test by fixed rules. A personalized idea is shown to the patient only after a clinician approves it; an idea based on a blood test needs the doctor.":
+    "تُقارَن الوصفات بالخطة المعتمدة وبآخر تحليل دم وفق قواعد ثابتة. لا تظهر الفكرة المخصّصة للمريض إلا بعد موافقة أحد أفراد الفريق الطبي، والفكرة المبنية على تحليل الدم تحتاج موافقة الطبيب.",
   "Look for meal ideas": "ابحث عن أفكار للوجبات",
   "No meal ideas to show yet.": "لا توجد أفكار وجبات بعد.",
   "Compared with the approved plan": "مقارَنة بالخطة المعتمدة",
+  "Based on the latest blood test": "بناءً على آخر تحليل دم",
+  "Waiting for the doctor's approval.": "بانتظار موافقة الطبيب.",
+  "Meal ideas approved by your care team": "أفكار وجبات اعتمدها فريق رعايتك",
+  "Open meal ideas": "فتح أفكار الوجبات",
+  "New meal ideas are available": "تتوفر أفكار وجبات جديدة",
+  "Record assistant": "مساعد السجل",
+  "Ask the assistant": "اسأل المساعد",
+  "Ask about your record": "اسأل عن سجلك",
+  Send: "إرسال",
+  Close: "إغلاق",
+  "Answers come only from your own record: results and summaries your doctor released, your approved plan and your food diary. This is not medical advice; ask your care team.":
+    "الإجابات مأخوذة من سجلك فقط: النتائج والملخصات التي أتاحها طبيبك وخطتك المعتمدة وسجل طعامك. هذه ليست نصيحة طبية؛ اسأل فريق رعايتك.",
+  "Summarize my record": "لخّص سجلي",
+  "What was my latest blood test?": "ما نتائج آخر تحليل دم لي؟",
+  "When is my next session?": "متى جلستي القادمة؟",
+  "Is it OK to drink tea today?": "هل يمكنني شرب الشاي اليوم؟",
   "General idea, not personalized": "فكرة عامة، غير مخصَّصة",
   "How to prepare": "طريقة التحضير",
   Approve: "اعتماد",
@@ -553,7 +575,6 @@ const BASE_AR: Record<string, string> = {
     "لم يشارك أي مريض معلومات تغذيته معك.",
   "The patient has not allowed you to record meals for them.":
     "لم يسمح لك المريض بتسجيل الوجبات نيابةً عنه.",
-  "Diary and plan": "السجل والخطة",
   "Dietitian dashboard": "لوحة أخصائي التغذية",
   "Meal ideas to review": "أفكار وجبات للمراجعة",
   "Report drafts": "مسودات التقارير",

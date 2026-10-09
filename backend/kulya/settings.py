@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "ai",
     "workflow",
     "nutrition",
+    "assistant",
 ]
 
 MIDDLEWARE = [

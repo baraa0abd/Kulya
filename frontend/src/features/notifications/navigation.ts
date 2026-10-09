@@ -9,6 +9,8 @@ export function notificationHref(notification: Notification, role: Role): string
   }
   if (notification.kind === "nutrition_report" && (role === "patient" || role === "family"))
     return "/patient/nutrition/reports/";
+  if (notification.kind === "meal_ideas" && (role === "patient" || role === "family"))
+    return "/patient/nutrition/suggestions/";
   if (notification.patient && ["doctor", "nurse", "dietitian"].includes(role)) {
     return `/doctor/patients/${encodeURIComponent(notification.patient)}/nutrition/${notification.kind === "nutrition_review" ? "lab-review/" : ""}`;
   }

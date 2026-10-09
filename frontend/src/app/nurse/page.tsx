@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, CalendarDays, MessageSquare, Users } from "lucide-react";
+import { Bell, CalendarDays, MessageSquare, Users, UtensilsCrossed } from "lucide-react";
 import Link from "next/link";
 import { z } from "zod";
 
@@ -9,6 +9,7 @@ import { ZForm } from "@/components/forms";
 import { type NavItem, Shell } from "@/components/layout/shell";
 import { SessionTable } from "@/features/clinical/components/session-record";
 import { NotificationInbox } from "@/features/notifications/components/inbox";
+import { MealRecords } from "@/features/nutrition/components/meal-records";
 import { api } from "@/lib/api";
 import { useRole } from "@/lib/auth";
 import { dateTime, label, today } from "@/lib/format";
@@ -24,6 +25,7 @@ const scheduleSchema = z.object({
 const NAV: NavItem[] = [
   { href: "#schedule", label: "Today's dialysis schedule", icon: CalendarDays },
   { href: "#patients", label: "Assigned patients", icon: Users },
+  { href: "#meals", label: "Meal records", icon: UtensilsCrossed },
   { href: "#feedback", label: "Doctor feedback inbox", icon: MessageSquare },
   { href: "#notifications", label: "Notifications", icon: Bell },
 ];
@@ -138,6 +140,12 @@ export default function NurseDashboard() {
               )}
             </Load>
           </Section>
+          {patients.data && (
+            <MealRecords
+              patients={patients.data}
+              diary={(id) => `/doctor/patients/${id}/nutrition/meals/`}
+            />
+          )}
         </div>
         <aside className="space-y-5">
           <Section

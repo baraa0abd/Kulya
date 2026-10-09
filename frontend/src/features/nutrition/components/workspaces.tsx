@@ -15,6 +15,7 @@ import { HOME, useRole } from "@/lib/auth";
 import { useGet } from "@/lib/hooks";
 import { tr, Tx, useLocale } from "@/lib/i18n";
 import {
+  ClipboardList,
   FileText,
   FlaskConical,
   History,
@@ -106,7 +107,7 @@ export function PatientNutrition({ view }: { view: PatientView }) {
   );
 }
 
-export type ClinicianView = "overview" | "lab-review" | "reports";
+export type ClinicianView = "overview" | "meals" | "lab-review" | "reports";
 
 /** Care-team nutrition review of one patient. Doctors and dietitians decide; nurses read and observe. */
 export function ClinicianNutrition({ view }: { view: ClinicianView }) {
@@ -118,7 +119,8 @@ export function ClinicianNutrition({ view }: { view: ClinicianView }) {
   const canDecide = user.role !== "nurse";
   const base = `/doctor/patients/${id}/nutrition/`;
   const nav: NavItem[] = [
-    { href: base, label: "Diary and plan", icon: UtensilsCrossed },
+    { href: `${base}meals/`, label: "Meal records", icon: UtensilsCrossed },
+    { href: base, label: "Nutrition plan", icon: ClipboardList },
     { href: `${base}lab-review/`, label: "Food and lab results", icon: FlaskConical },
     { href: `${base}reports/`, label: "Nutrition reports", icon: FileText },
   ];
@@ -129,6 +131,7 @@ export function ClinicianNutrition({ view }: { view: ClinicianView }) {
       back={back}
       nav={nav}
     >
+      {view === "meals" && <MealHistory patient={id} canLog={false} />}
       {view === "lab-review" && <LabPanel patient={id} canDecide={canDecide} />}
       {view === "reports" && <ReportsPanel patient={id} canDecide={canDecide} />}
       {view === "overview" && (
@@ -146,9 +149,13 @@ export function ClinicianNutrition({ view }: { view: ClinicianView }) {
             </a>
           </div>
           <PlanPanel patient={id} canDecide={canDecide} />
-          <Suggestions patient={id} canDecide={canDecide} canRequest={canDecide} />
+          <Suggestions
+            patient={id}
+            canDecide={canDecide}
+            canDecideLabBased={user.role === "doctor"}
+            canRequest={canDecide}
+          />
           <Observations patient={id} canWrite={user.role === "nurse"} />
-          <MealHistory patient={id} canLog={false} />
         </>
       )}
     </Shell>

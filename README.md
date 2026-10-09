@@ -56,7 +56,7 @@ a demanding diet largely alone.
 
 Three rules shape everything else:
 
-1. **AI drafts, humans decide.** Nothing written by a model reaches the record or a patient without a clinician's review.
+1. **AI drafts, humans decide.** Nothing written by a model reaches the record or a patient without a clinician's review. The one exception is the patient's record assistant, which only reads back what a clinician has already released or approved for that patient, and declines to judge a result or a food.
 2. **Numbers come from code, not from the model.** Durations, nutrient totals and limits are calculated by deterministic code. A missing value stays "not available" and is never shown as zero.
 3. **Deny by default.** Every request is checked for role *and* for a care relationship with that specific patient.
 
@@ -93,7 +93,8 @@ In both, AI only writes drafts and a clinician approves anything before a patien
 | **Food diary** | The patient types, speaks or photographs a meal; the assistant proposes foods and the patient confirms each line before saving. |
 | **Nutrient estimates** | The server calculates energy, protein, sodium, potassium, phosphorus, calcium and fluid from the food catalogue. Unknown values stay "not available", never zero. |
 | **Nutrition plan** | A doctor or dietitian approves per-meal limits and allergies; each change is a new version. |
-| **Meal ideas** | Recipes are compared with the approved plan by fixed rules; a clinician approves personalized ones before the patient sees them. |
+| **Meal records** | The latest diary meals appear on the doctor, nurse and patient dashboards, with the full diary one click away. |
+| **Meal ideas** | Recipes are compared with the approved plan and ordered by the latest blood test using fixed rules. A clinician approves personalized ideas before the patient sees them; an idea based on a blood test needs the doctor. |
 | **Food and lab view** | The diary and lab results side by side, with a descriptive AI draft that never claims a food caused a result. |
 | **Nutrition reports** | Computed facts plus an AI narrative, released by a clinician and printable to PDF. |
 | **Nurse observations** | Appetite or nausea concerns, which can be referred to the doctor and dietitian. |
@@ -103,6 +104,7 @@ In both, AI only writes drafts and a clinician approves anything before a patien
 - **Five roles** — nurse, doctor, renal dietitian, patient and family caregiver — each with its own dashboard.
 - **Access control** — staff see only patients on their care team; patients see only their own released information.
 - **Family sharing** — the patient chooses what a caregiver can see (summaries, appointments, labs, food diary, logging meals for them) and can revoke it.
+- **Record assistant** — a chat on every patient screen that answers from that patient's own released results, summaries, plan and diary, in Arabic or English. Each patient has a separate conversation.
 - **Notifications and audit trail** — each user has an inbox, and every write and sensitive read is logged.
 - **Arabic right-to-left interface** by default, with an English switch.
 

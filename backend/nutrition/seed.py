@@ -94,9 +94,10 @@ def seed_nutrition(password: str, organization: str) -> bool:
             "allergies": ["fish"],
         },
     )
-    recommendations = services.suggest(one, dietitian)  # personalized: wait for the dietitian
+    # Ordered by the latest laboratory report, so the ideas wait for the doctor.
+    recommendations = services.suggest(one, dietitian)
     for rec in [r for r in recommendations if r.category == "compatible"][:2]:
-        services.review_recommendation(rec.pk, dietitian, approve=True)
+        services.review_recommendation(rec.pk, User.objects.get(username="doctor1"), approve=True)
     services.suggest(two, two.user)  # no plan: general ideas only
 
     end = timezone.localdate()

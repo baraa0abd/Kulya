@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Noto_Sans_Arabic } from "next/font/google";
 
+import { PatientAssistant } from "@/features/assistant/components/chat";
 import { AuthProvider } from "@/lib/auth";
 import { LocaleBoot } from "@/lib/i18n";
 
@@ -22,7 +23,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ar" dir="rtl" className={`${inter.variable} ${arabic.variable} h-full antialiased`}>
       <body className="min-h-full font-sans">
         <LocaleBoot />
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          {children}
+          <PatientAssistant />
+        </AuthProvider>
       </body>
     </html>
   );

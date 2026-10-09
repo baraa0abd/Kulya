@@ -8,7 +8,7 @@
    catalog food controls its displayed name and nutrient calculation.
 4. Confirm each food and portion, choose the meal and time, and save. Future times, invalid
    quantities, unsupported portions and unconfirmed rows are blocked with an explanation.
-5. Open **Meal diary** to filter dates or confirmation status. **Correct meal** opens the saved
+5. The latest meals also appear under **Meal records** on the dashboard. Open **Meal diary** to filter dates or confirmation status. **Correct meal** opens the saved
    foods and quantities; changing a quantity requires confirmation again. Saving recalculates
    nutrients on the server. Removing a meal withdraws it and retains the audit history.
 
@@ -22,15 +22,27 @@ understands numeric Arabic portions such as `٢ حبة بيض، ١٫٥ كوب ر
 only when the real provider is configured; offline mode states its limitation. Speech failures
 offer direct entry instead. All proposed foods still require confirmation.
 
+**Meal ideas from blood tests.** When a result in the latest laboratory report is above, or in the
+upper part of, the laboratory's own reference range, recipes are ordered by that nutrient and each
+idea says where it sits. These ideas quote laboratory values, so only a doctor can approve them;
+the patient sees an idea, and is notified, only after that approval.
+
+**Record assistant.** The **Ask the assistant** button on every patient screen answers from the
+patient's own record: released laboratory results and summaries, the approved plan, the food
+diary, upcoming sessions and approved meal ideas. Each patient has a separate conversation. It
+reads results back and does not say whether a food or drink is allowed; it points to the care team.
+
 ## Nurse
 
-Open **Nutrition** beside a patient on the assigned-patient list. Review their diary and approved
-plan, then record eating difficulties, nausea or appetite concerns. Refer an observation to the
+The **Meal records** card on the dashboard shows the latest meals of the chosen patient, and
+**Open the full meal diary** shows the rest. Open **Nutrition** beside a patient on the
+assigned-patient list to review their approved plan, then record eating difficulties, nausea or appetite concerns. Refer an observation to the
 doctor and dietitian when appropriate. Nurses cannot approve plans or release reports.
 
 ## Doctor or dietitian
 
-Review the diary, food/lab view and nursing observations. The plan form starts with the active
+The dashboard has the same **Meal records** card as the nurse's. Review the diary, food/lab view
+and nursing observations. The plan form starts with the active
 plan's values, so updating guidance does not silently erase its limits or allergies. Approval
 creates a new version. Arabic names for the catalog's fish, milk, egg and gluten allergens
 are normalized before recipe exclusion. Review AI drafts and explicitly release reports before

@@ -52,7 +52,9 @@ for (const role of ["doctor", "nurse", "patient", "dietitian", "family"]) {
       const patient = role === "dietitian" ? data[0].patient : data.results[0].id;
       routes = [
         `/${role}/`,
-        ...["", "lab-review/", "reports/"].map((s) => `/doctor/patients/${patient}/nutrition/${s}`),
+        ...["", "meals/", "lab-review/", "reports/"].map(
+          (s) => `/doctor/patients/${patient}/nutrition/${s}`,
+        ),
       ];
       if (role === "doctor") routes.push(`/doctor/patients/${patient}/`);
       if (role !== "dietitian") {

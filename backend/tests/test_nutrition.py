@@ -335,7 +335,7 @@ def test_personalized_suggestions_wait_for_a_clinician(api, patient, foods, diet
     category = {r["recipe"]["name"]: r["category"] for r in recs}
     assert category["Lentil soup"] == "needs_dietitian_review"  # 597.4 mg potassium, over the 500 mg limit
     assert category["Grilled chicken with rice and cucumber"] == "compatible"  # 455.6 mg
-    assert Notification.objects.filter(recipient=dietitian, kind="nutrition_review").count() == 1
+    assert Notification.objects.filter(recipient=dietitian, kind="meal_ideas").count() == 1
     pick, other = recs[0], recs[1]
     url = f"{API}/recommendations/{pick['id']}/review/"
     assert api(nurse).post(url, {"approve": True}, "json").status_code == 403

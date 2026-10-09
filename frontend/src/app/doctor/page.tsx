@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, Bell, ClipboardList, Users } from "lucide-react";
+import { Activity, Bell, ClipboardList, Users, UtensilsCrossed } from "lucide-react";
 import Link from "next/link";
 
 import { Load, Section, Stats, Status } from "@/components/feedback";
@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { NotificationInbox } from "@/features/notifications/components/inbox";
+import { MealRecords } from "@/features/nutrition/components/meal-records";
 import { useRole } from "@/lib/auth";
 import { dateTime, label } from "@/lib/format";
 import { useList } from "@/lib/hooks";
@@ -23,6 +24,7 @@ import { type NursingAction, type Patient, type ReviewTask } from "@/lib/types";
 const NAV: NavItem[] = [
   { href: "#reviews", label: "Pending physician reviews", icon: ClipboardList },
   { href: "#patients", label: "Assigned patients", icon: Users },
+  { href: "#meals", label: "Meal records", icon: UtensilsCrossed },
   { href: "#activity", label: "Recent nursing activity", icon: Activity },
   { href: "#notifications", label: "Notifications", icon: Bell },
 ];
@@ -158,6 +160,12 @@ export default function DoctorDashboard() {
               )}
             </Load>
           </Section>
+          {patients.data && (
+            <MealRecords
+              patients={patients.data}
+              diary={(id) => `/doctor/patients/${id}/nutrition/meals/`}
+            />
+          )}
         </div>
         <aside className="space-y-5">
           <Section
