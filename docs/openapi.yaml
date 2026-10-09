@@ -5,6 +5,140 @@ info:
   description: Dialysis documentation review and session summaries. Synthetic data
     only. Not a medical device.
 paths:
+  /api/admin/accounts/:
+    get:
+      operationId: admin_accounts_list
+      description: Staff, patient and caregiver accounts of the administrator's own
+        organization.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAccountList'
+          description: ''
+    post:
+      operationId: admin_accounts_create
+      description: Staff, patient and caregiver accounts of the administrator's own
+        organization.
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Account'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Account'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Account'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+          description: ''
+  /api/admin/accounts/{id}/deactivate/:
+    post:
+      operationId: admin_accounts_deactivate_create
+      description: Staff, patient and caregiver accounts of the administrator's own
+        organization.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+          description: ''
+  /api/admin/patients/:
+    get:
+      operationId: admin_patients_list
+      description: 'Patient registration by the organization administrator: identity
+        only, never clinical records.'
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPatientRegistrationList'
+          description: ''
+    post:
+      operationId: admin_patients_create
+      description: 'Patient registration by the organization administrator: identity
+        only, never clinical records.'
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientRegistration'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatientRegistration'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatientRegistration'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientRegistration'
+          description: ''
   /api/ai/reviews/:
     get:
       operationId: ai_reviews_list
@@ -224,6 +358,53 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/assistant/chat/:
+    get:
+      operationId: assistant_chat_list
+      description: |-
+        The signed-in patient's own conversation. The patient comes from the account, never from the
+        request, so one patient can neither ask about nor read another's record.
+      tags:
+      - assistant
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatMessage'
+          description: ''
+    post:
+      operationId: assistant_chat_create
+      description: |-
+        The signed-in patient's own conversation. The patient comes from the account, never from the
+        request, so one patient can neither ask about nor read another's record.
+      tags:
+      - assistant
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Ask'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Ask'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Ask'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatMessage'
+          description: ''
   /api/audit/:
     get:
       operationId: audit_list
@@ -293,6 +474,30 @@ paths:
               schema:
                 $ref: '#/components/schemas/Me'
           description: ''
+  /api/auth/password/:
+    post:
+      operationId: auth_password_create
+      description: Change your own password. Tokens already issued stay valid until
+        they expire.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Password'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Password'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Password'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/auth/refresh/:
     post:
       operationId: auth_refresh_create
@@ -2162,6 +2367,53 @@ components:
         * `AVF` - Avf
         * `AVG` - Avg
         * `CVC` - Cvc
+    Account:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        display_name:
+          type: string
+          maxLength: 200
+        role:
+          $ref: '#/components/schemas/AccountRoleEnum'
+        password:
+          type: string
+          writeOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+          title: Active
+          description: Designates whether this user should be treated as active. Unselect
+            this instead of deleting accounts.
+      required:
+      - id
+      - is_active
+      - password
+      - role
+      - username
+    AccountRoleEnum:
+      enum:
+      - doctor
+      - nurse
+      - dietitian
+      - patient
+      - family
+      type: string
+      description: |-
+        * `doctor` - Doctor
+        * `nurse` - Nurse
+        * `dietitian` - Dietitian
+        * `patient` - Patient
+        * `family` - Family
     ActionTypeEnum:
       enum:
       - medication_administration
@@ -2182,6 +2434,18 @@ components:
         * `position_change` - Position Change
         * `physician_notified` - Physician Notified
         * `other` - Other
+    Ask:
+      type: object
+      properties:
+        question:
+          type: string
+          maxLength: 500
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          default: ar
+      required:
+      - question
     AuditEvent:
       type: object
       properties:
@@ -2263,6 +2527,28 @@ components:
       - professional_name
       - professional_role
       - starts_at
+    ChatMessage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        question:
+          type: string
+          readOnly: true
+        answer:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - answer
+      - created_at
+      - id
+      - question
     CompleteSession:
       type: object
       properties:
@@ -2787,6 +3073,14 @@ components:
       - id
       - unit
       - value
+    LanguageEnum:
+      enum:
+      - ar
+      - en
+      type: string
+      description: |-
+        * `ar` - ar
+        * `en` - en
     Login:
       type: object
       properties:
@@ -2816,7 +3110,7 @@ components:
           readOnly: true
         role:
           allOf:
-          - $ref: '#/components/schemas/RoleEnum'
+          - $ref: '#/components/schemas/MeRoleEnum'
           readOnly: true
         organization:
           type: string
@@ -2829,6 +3123,28 @@ components:
       - organization
       - role
       - username
+    MeRoleEnum:
+      enum:
+      - doctor
+      - nurse
+      - patient
+      - family
+      - dietitian
+      - org_admin
+      - sys_admin
+      - auditor
+      - service
+      type: string
+      description: |-
+        * `doctor` - Doctor
+        * `nurse` - Nurse
+        * `patient` - Patient
+        * `family` - Family
+        * `dietitian` - Dietitian
+        * `org_admin` - Org Admin
+        * `sys_admin` - Sys Admin
+        * `auditor` - Auditor
+        * `service` - Service
     Meal:
       type: object
       properties:
@@ -3090,6 +3406,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AIReview'
+    PaginatedAccountList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Account'
     PaginatedAuditEventList:
       type: object
       required:
@@ -3297,6 +3636,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/NursingNote'
+    PaginatedPatientRegistrationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PatientRegistration'
     PaginatedPrescriptionList:
       type: object
       required:
@@ -3389,6 +3751,16 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/VitalSign'
+    Password:
+      type: object
+      properties:
+        current_password:
+          type: string
+        new_password:
+          type: string
+      required:
+      - current_password
+      - new_password
     PatchedMeal:
       type: object
       properties:
@@ -3432,6 +3804,34 @@ components:
           type: string
           format: date-time
           readOnly: true
+    PatientRegistration:
+      type: object
+      description: What an organization administrator enters to register a patient.
+        No clinical data.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        mrn:
+          type: string
+          maxLength: 40
+        full_name:
+          type: string
+          maxLength: 200
+        date_of_birth:
+          type: string
+          format: date
+        account:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          nullable: true
+      required:
+      - date_of_birth
+      - full_name
+      - id
+      - mrn
     Period:
       type: object
       properties:
@@ -3649,6 +4049,9 @@ components:
         personalized:
           type: boolean
           readOnly: true
+        lab_based:
+          type: boolean
+          readOnly: true
         reasoning_summary:
           type: string
           readOnly: true
@@ -3678,6 +4081,7 @@ components:
       - category
       - created_at
       - id
+      - lab_based
       - limitations
       - nutrient_estimates
       - nutrition_plan
@@ -3859,28 +4263,6 @@ components:
       description: |-
         * `open` - Open
         * `done` - Done
-    RoleEnum:
-      enum:
-      - doctor
-      - nurse
-      - patient
-      - family
-      - dietitian
-      - org_admin
-      - sys_admin
-      - auditor
-      - service
-      type: string
-      description: |-
-        * `doctor` - Doctor
-        * `nurse` - Nurse
-        * `patient` - Patient
-        * `family` - Family
-        * `dietitian` - Dietitian
-        * `org_admin` - Org Admin
-        * `sys_admin` - Sys Admin
-        * `auditor` - Auditor
-        * `service` - Service
     ScopesEnum:
       enum:
       - summaries

@@ -34,6 +34,7 @@ with a human clinician between every AI draft and every patient.**
   - [Who can see what](#who-can-see-what)
 - [Quick start (Docker)](#quick-start-docker)
 - [Demo accounts](#demo-accounts)
+- [Running with real records](#running-with-real-records)
 - [Local development](#local-development)
 - [Tests](#tests)
 - [Where things are](#where-things-are)
@@ -52,7 +53,8 @@ a demanding diet largely alone.
 | Session documentation has gaps that are found late, or never. | Fixed rules check each session; an AI draft explains the gaps and cites the records and protocol passages it used. |
 | Doctors read raw charts to understand one session. | An AI summary draft is prepared; the doctor verifies it. |
 | Patients and families rarely get a plain explanation. | The patient sees a summary **only after** a doctor verifies and releases it. |
-| Diet is hard to follow and hard for clinicians to see. | A food diary (type, speak or photograph a meal), a clinician-approved plan, rule-based meal ideas and periodic reports. |
+| Diet is hard to follow and hard for clinicians to see. | A food diary (type, speak or photograph a meal) that the nurse and doctor see too, a clinician-approved plan, meal ideas ordered by the latest blood test, and periodic reports. |
+| Patients have to hunt through screens for one number. | A record assistant answers from the patient's own released record, in Arabic or English. |
 
 Three rules shape everything else:
 
@@ -65,10 +67,11 @@ Three rules shape everything else:
 | Role | What they do in Kulya |
 |---|---|
 | **Nurse** | Runs today's sessions: vitals, machine readings, actions, notes, events. Records eating concerns and can refer them. |
-| **Doctor** | Reviews documentation findings and AI drafts, gives feedback, verifies and releases summaries, writes dialysis orders, approves nutrition plans. |
+| **Doctor** | Reviews documentation findings and AI drafts, gives feedback, verifies and releases summaries, writes dialysis orders, enters and releases laboratory reports, approves nutrition plans and meal ideas. |
 | **Renal dietitian** | Approves nutrition plans, reviews meal ideas and food-and-lab drafts, releases nutrition reports. |
 | **Patient** | Sees released summaries, released lab results and appointments; keeps a food diary; decides what family may see. |
 | **Family caregiver** | Sees only what the patient has shared, and only while that consent is valid. |
+| **Organization administrator** | Opens accounts, registers patients and builds care teams. Sees no clinical record. |
 
 ## What it does
 
@@ -101,7 +104,7 @@ In both, AI only writes drafts and a clinician approves anything before a patien
 
 ### Across the whole app
 
-- **Five roles** — nurse, doctor, renal dietitian, patient and family caregiver — each with its own dashboard.
+- **Six roles** — nurse, doctor, renal dietitian, patient, family caregiver and organization administrator — each with its own screens. The main dashboards show at most five sections.
 - **Access control** — staff see only patients on their care team; patients see only their own released information.
 - **Family sharing** — the patient chooses what a caregiver can see (summaries, appointments, labs, food diary, logging meals for them) and can revoke it.
 - **Record assistant** — a chat on every patient screen that answers from that patient's own released results, summaries, plan and diary, in Arabic or English. Each patient has a separate conversation.
@@ -179,8 +182,8 @@ record that points at the original.
 
 ### The AI safety pipeline
 
-Every AI feature — documentation review, session summary, meal recognition, food-and-lab review,
-meal-idea wording, nutrition report — goes through the same gate.
+Every AI feature that writes a draft — documentation review, session summary, meal recognition,
+food-and-lab review, meal-idea wording, nutrition report — goes through the same gate.
 
 ```mermaid
 flowchart TD
@@ -209,6 +212,12 @@ What validation rejects: output that does not match the schema, citations of rec
 not provided, numbers that are not values in the input, diagnosis or prescribing language,
 causal claims between food and lab results, and medication advice. The wording filter is a
 keyword list — a blunt net; the reviewing clinician is the real control.
+
+The **record assistant** is the one feature with no per-answer review, so it is held to a
+narrower job: it answers only from what a clinician already released or approved for that
+patient, each patient has a separate conversation, and it does not say whether a result is good
+or a food is allowed. An answer with advice wording or a number that is not in the record is
+replaced by a rule-based one.
 
 ### Life of an AI draft
 
@@ -247,7 +256,7 @@ flowchart LR
         REC["Assistant proposes foods<br/>nothing is saved"]
         EST["Nutrient estimate<br/>catalogue value x grams"]
         DIARY[("Food diary")]
-        RULES["Compare recipes with<br/>the approved plan"]
+        RULES["Compare recipes with the plan<br/>and the latest blood test"]
         REP["Report: computed facts<br/>+ separate AI narrative"]
     end
 
@@ -269,6 +278,10 @@ flowchart LR
 - Nutrient numbers are calculated by the server. A food that is not in the catalogue has
   **unknown** values, and a day with no record is "not recorded" — never "ate nothing".
 - Limits exist only in a plan a clinician approved. Without one, meal ideas are labelled general.
+- When a result in the latest laboratory report is above, or in the upper quarter of, the
+  laboratory's own reference range, recipes are ordered by that nutrient (potassium, phosphate
+  or sodium). The cut-off is an ordering heuristic, not a clinical limit. These ideas quote
+  laboratory values, so only a doctor can approve them.
 - Food and lab results are shown **side by side**. The app never claims a food changed a result.
 - The bundled food catalogue (`backend/nutrition/data/catalog.json`) is **approximate and
   unverified**. `python manage.py load_food_catalog` loads it; `seed_demo` does this for you.
@@ -302,6 +315,11 @@ flowchart TD
 | Dietitian (assigned) | — | nutrition only | — | read | read | nutrition only |
 | Patient | — | — | own | own, released | own, write | — |
 | Family (consent) | — | — | if shared | if shared, released | if shared | — |
+| Administrator | — | — | — | — | — | — |
+
+The administrator sees accounts, patient identity (record number, name, date of birth) and care
+teams of their own organization, and nothing clinical. The record assistant is available to the
+patient only.
 
 Family sharing is per patient and per scope (`summaries`, `appointments`, `labs`, `nutrition`,
 `nutrition_log`), can expire, and can be revoked by the patient at any time.
@@ -332,11 +350,31 @@ All people and records are invented. Every account uses the `DEMO_PASSWORD` you 
 | `patient1`–`patient3` | patient | own released records and own food diary |
 | `family1` | family caregiver | SYN-001: summaries, appointments and nutrition (consent) |
 | `family2` | family caregiver | nothing (consent expired) |
-| `auditor1`, `orgadmin1` | audit / admin | no clinical data |
+| `orgadmin1` | organization administrator | accounts, patient registry and care teams; no clinical data |
+| `auditor1` | auditor | the audit trail; no clinical data |
 
 A five-minute tour: sign in as `nurse1` and complete a session → `doctor1` reviews the draft,
-verifies and releases the summary → `patient1` reads it and adds a meal → `dietitian1` approves a
-meal idea and releases the nutrition report.
+verifies and releases the summary, then approves a meal idea based on the latest blood test →
+`patient1` reads the summary, adds a meal and asks the assistant "what was my urea in the last
+blood test?" → `dietitian1` releases the nutrition report.
+
+Each browser tab keeps its own sign-in, so several roles can be open side by side.
+
+## Running with real records
+
+`DEMO_MODE=false` starts the app without anything synthetic: no demo seed, no "synthetic data"
+labels, and no template text standing in for AI. Without `LLM_PROVIDER=anthropic` and a key, the
+AI features report themselves unavailable.
+
+```bash
+docker compose up --build -d
+docker compose exec -e ADMIN_PASSWORD backend python manage.py create_org_admin "Unit name" admin_username
+```
+
+The administrator then opens accounts, registers patients and builds care teams on the
+**Administration** screen; everyone changes their first password under **My account**.
+[`DEPLOYMENT.md`](DEPLOYMENT.md) has the full steps and the list of what must happen before real
+patients, which code alone does not settle.
 
 ## Local development
 
@@ -361,6 +399,9 @@ and `ANTHROPIC_API_KEY` to use Claude.
 | `ANTHROPIC_API_KEY` | empty | Needed only with `LLM_PROVIDER=anthropic` |
 | `USDA_API_KEY` | empty | Enables the optional USDA food lookup |
 | `CELERY_TASK_ALWAYS_EAGER` | `true` locally | `false` sends AI jobs to the worker |
+| `DEMO_MODE` | `true` | `false` runs without the demo seed and without the offline provider |
+| `ADMIN_PASSWORD` | empty | Read once by `create_org_admin` for the first administrator |
+| `CACHE_URL` | empty | Redis cache so rate limits hold across server processes |
 
 The full list is in [`.env.example`](.env.example).
 
@@ -378,7 +419,9 @@ report releases. Sign-in is limited to 10 per minute. For the complete suite, us
 local test database and servers documented in `NUTRITION_WORKFLOW.md`. The cases now create
 their own workflow records and tolerate earlier runs; no database flush is required.
 
-All tests run offline against the mock provider; none needs an API key.
+All tests run offline against the mock provider; none needs an API key. Backend lint also
+enforces a branch limit per function, and `tests/test_architecture.py` on each side guards the
+dependency rules described in [`CODE_STRUCTURE.md`](CODE_STRUCTURE.md).
 
 ## Where things are
 
@@ -390,11 +433,12 @@ Kulya/
 │   ├── ai/                   rules, retrieval, provider adapters, validation, prompts
 │   ├── workflow/             doctor feedback, review tasks, notifications
 │   ├── nutrition/            food catalogue, diary, plans, suggestions, reports
-│   └── tests/                pytest suite (security, AI, workflow, nutrition)
+│   ├── assistant/            the patient's record assistant: wording, validation, workflow
+│   └── tests/                pytest suite (security, AI, workflow, nutrition, assistant, onboarding)
 ├── frontend/                 Next.js + TypeScript + Tailwind + Base UI primitives
-│   ├── src/app/              doctor, nurse, patient, dietitian screens
+│   ├── src/app/              doctor, nurse, patient, dietitian, administration and account screens
 │   ├── src/components/       shared shell, feedback, forms and UI primitives
-│   ├── src/features/         clinical records, notifications and nutrition workflows
+│   ├── src/features/         clinical records, notifications, nutrition and the assistant
 │   ├── src/lib/              transport, contracts, authentication and localization
 │   └── e2e/                  Playwright browser tests
 ├── docs/openapi.yaml         generated API schema (live at /api/docs/ on the backend)
@@ -423,7 +467,13 @@ Stated plainly, because this is health software:
 - **Protocol text is synthetic.** No clinician has approved the rules, prompts or wording.
 - **Retrieval uses a simple lexical embedding**, not a semantic model.
 - **Voice entry uses the browser's speech service**; there is no server-side transcription.
-- **Session tokens live in browser session storage**; there is no MFA or password reset.
+- **Session tokens live in browser session storage**; there is no MFA and no password reset by
+  email. A new account is not forced to change its first password.
+- **Record-assistant answers are not reviewed one by one.** With the mock provider they are
+  keyword rules, not a model.
+- **The blood-test ordering of meal ideas uses a fixed cut-off** in the laboratory's reference
+  range, chosen by the developers, not by a clinician.
+- **No import from other systems.** Accounts, patients and laboratory reports are typed in.
 - **Arabic wording has not been reviewed by a clinician or medical translator.**
 - Software tests cannot make this clinically safe. Real use needs clinical assessment, a privacy
   review and any regulatory clearance that applies.
@@ -435,11 +485,13 @@ Stated plainly, because this is health software:
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Apps, data rules, authorization, the AI features in detail |
 | [`CODE_STRUCTURE.md`](CODE_STRUCTURE.md) | Code ownership, dependency rules, cleanup decisions and research sources |
 | [`SECURITY.md`](SECURITY.md) | What is enforced and tested, known gaps, what real use requires |
-| [`DEPLOYMENT.md`](DEPLOYMENT.md) | Running the stack and what production would still need |
+| [`DEPLOYMENT.md`](DEPLOYMENT.md) | Running the demo, running with real records, and what must happen before real patients |
+| [`NUTRITION_WORKFLOW.md`](NUTRITION_WORKFLOW.md) | How each role uses the nutrition screens and the assistant |
 | [`TEST_REPORT.md`](TEST_REPORT.md) | What was run, the results, and what was not tested |
 | [`TASKS.md`](TASKS.md) | Task list with status, evidence and limitations |
 | [`docs/openapi.yaml`](docs/openapi.yaml) | Full API schema |
-| [`Dialysis-Copilot-3min.pdf`](Dialysis-Copilot-3min.pdf) | The 3-minute pitch deck |
+| [`Dialysis-Copilot-3min.pdf`](Dialysis-Copilot-3min.pdf) | The 3-minute pitch deck (made before the meal-record, blood-test and assistant features) |
+| [`docs/pitch-deck-prompt.json`](docs/pitch-deck-prompt.json) | Brief for a new deck: Sulaimani evidence, every feature with its reason, demo script |
 
 ---
 
