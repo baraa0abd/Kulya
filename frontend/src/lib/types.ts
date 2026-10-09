@@ -20,7 +20,7 @@ export interface Patient {
   date_of_birth?: string;
 }
 
-export type SessionStatus = "scheduled" | "in_progress" | "completed" | "cancelled";
+type SessionStatus = "scheduled" | "in_progress" | "completed" | "cancelled";
 
 export interface Session {
   id: string;
@@ -99,7 +99,7 @@ export interface Finding {
   source_record_ids: string[];
 }
 
-export interface ProtocolPassage {
+interface ProtocolPassage {
   id: string;
   title: string;
   protocol_version: string;
@@ -135,7 +135,7 @@ export interface AIReview {
   created_at: string;
 }
 
-export interface Metric {
+interface Metric {
   value: number | null;
   unit: string;
   kind: string;
@@ -201,7 +201,7 @@ export interface Notification {
   created_at: string;
 }
 
-export interface LabResult {
+interface LabResult {
   id: string;
   analyte: string;
   value: string;

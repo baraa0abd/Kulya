@@ -21,8 +21,6 @@ from .models import (
     VitalSign,
 )
 
-AUDIT_FIELDS = ["id", "created_at"]
-
 
 class PatientSerializer(serializers.ModelSerializer):
     class Meta:
@@ -56,6 +54,19 @@ class PatientRegistrationSerializer(serializers.ModelSerializer):
         model = Patient
         fields = ["id", "mrn", "full_name", "date_of_birth", "account"]
         read_only_fields = ["id"]
+
+    def _organization(self):
+        return self.context["request"].user.organization_id
+
+    def validate_mrn(self, value: str) -> str:
+        if Patient.objects.filter(organization_id=self._organization(), mrn=value).exists():
+            raise serializers.ValidationError("This record number is already registered.")
+        return value
+
+    def validate_account(self, account: User | None) -> User | None:
+        if account is not None and account.organization_id != self._organization():
+            raise serializers.ValidationError("Choose a patient account of your organization.")
+        return account
 
 
 class CareAssignmentSerializer(serializers.ModelSerializer):

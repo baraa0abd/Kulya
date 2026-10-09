@@ -17,7 +17,7 @@ from ai.output_validation import (
     validation_error,
 )
 
-from .engine import NUTRIENTS, UNITS
+from .engine import LAB_NUTRIENT, NUTRIENTS, UNITS
 
 RECOGNIZE, ANALYZE, SUGGEST, REPORT = (
     "nutrition_recognize_v1",
@@ -194,7 +194,7 @@ _PORTION_ALIASES = {
 }
 _SEPARATORS = (",", "،", "+", " and ", " with ", " و ", " مع ")
 # The lab analyte that is shown next to each nutrient. Side by side only: no cause is implied.
-_PAIRS = {"potassium_mg": "potassium", "phosphorus_mg": "phosph", "sodium_mg": "sodium", "protein_g": "albumin"}
+_PAIRS = {**{nutrient: analyte for analyte, nutrient in LAB_NUTRIENT.items()}, "protein_g": "albumin"}
 
 
 def _mock_items(description: str) -> list[dict]:

@@ -41,8 +41,8 @@ def search(query: str) -> list[FoodItem]:
 def fetch(query: str) -> dict:
     params = urlencode({"query": query, "pageSize": 5, "dataType": "Foundation,SR Legacy"})
     # The key travels in a header, so it never lands in a URL log.
-    request = Request(f"{URL}?{params}", headers={"X-Api-Key": settings.USDA_API_KEY})  # noqa: S310 - fixed https URL
-    with urlopen(request, timeout=10) as response:  # noqa: S310
+    request = Request(f"{URL}?{params}", headers={"X-Api-Key": settings.USDA_API_KEY})  # fixed https URL
+    with urlopen(request, timeout=10) as response:
         return json.loads(response.read())
 
 

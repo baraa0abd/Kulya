@@ -4,7 +4,6 @@ from django.db import connection
 from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -13,9 +12,9 @@ from rest_framework_simplejwt.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+from . import services
 from .models import AuditEvent, Role, User
 from .permissions import ALL_ROLES
-from .services import audit
 
 EVERY_ACCOUNT = (*ALL_ROLES, Role.ORG_ADMIN, Role.AUDITOR, Role.SYS_ADMIN)
 # Accounts an organization administrator may open. Administrators and auditors are created on the server.
@@ -63,6 +62,14 @@ class PasswordSerializer(serializers.Serializer):
     current_password = serializers.CharField(trim_whitespace=False)
     new_password = serializers.CharField(trim_whitespace=False)
 
+    def validate_current_password(self, value: str) -> str:
+        if not self.context["request"].user.check_password(value):
+            raise serializers.ValidationError("The current password is not correct.")
+        return value
+
+    def validate_new_password(self, value: str) -> str:
+        return _checked_password(value, self.context["request"].user)
+
 
 class PasswordView(APIView):
     """Change your own password. Tokens already issued stay valid until they expire."""
@@ -72,17 +79,9 @@ class PasswordView(APIView):
 
     @extend_schema(request=PasswordSerializer, responses={204: None})
     def post(self, request: Request) -> Response:
-        body = PasswordSerializer(data=request.data)
+        body = PasswordSerializer(data=request.data, context={"request": request})
         body.is_valid(raise_exception=True)
-        user = request.user
-        if not user.check_password(body.validated_data["current_password"]):
-            raise ValidationError({"current_password": "The current password is not correct."})
-        try:
-            user.set_password(_checked_password(body.validated_data["new_password"], user))
-        except serializers.ValidationError as exc:
-            raise ValidationError({"new_password": exc.detail}) from exc
-        user.save()
-        audit(user, "password_changed", user)
+        services.change_password(request.user, body.validated_data["new_password"])
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -112,17 +111,12 @@ class AccountViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.Ge
         return accounts.order_by("role", "username")
 
     def perform_create(self, serializer) -> None:
-        admin = self.request.user
-        serializer.instance = User.objects.create_user(organization=admin.organization, **serializer.validated_data)
-        audit(admin, "account_created", serializer.instance, role=serializer.instance.role)
+        serializer.instance = services.create_account(self.request.user, serializer.validated_data)
 
     @extend_schema(request=None, responses=AccountSerializer)
     @action(detail=True, methods=["post"])
     def deactivate(self, request: Request, pk=None) -> Response:
-        account = self.get_object()
-        account.is_active = False
-        account.save()
-        audit(request.user, "account_deactivated", account)
+        account = services.deactivate_account(request.user, self.get_object())
         return Response(self.get_serializer(account).data)
 
 

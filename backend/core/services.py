@@ -1,4 +1,5 @@
-"""Cross-cutting helpers: audit trail, background-task dispatch, idempotent POST handling."""
+"""Cross-cutting helpers (audit trail, background-task dispatch, idempotent POST handling) and
+the account use cases."""
 
 import json
 import logging
@@ -38,7 +39,7 @@ def dispatch(task, *args) -> bool:
         else:
             task.apply_async(args=args, retry=False)
         return True
-    except Exception:  # noqa: BLE001 - broker/worker failure must not break the request
+    except Exception:  # broker/worker failure must not break the request
         logger.exception("task dispatch failed", extra={"ctx": {"task": task.name}})
         return False
 
@@ -60,3 +61,23 @@ def idempotent(request: Request, handler: Callable[[], Response]) -> Response:
         except IntegrityError:  # a concurrent retry stored it first
             pass
     return response
+
+
+def create_account(admin: User, data: dict) -> User:
+    """A new account always joins the administrator's own organization."""
+    account = User.objects.create_user(organization=admin.organization, **data)
+    audit(admin, "account_created", account, role=account.role)
+    return account
+
+
+def deactivate_account(admin: User, account: User) -> User:
+    account.is_active = False
+    account.save()
+    audit(admin, "account_deactivated", account)
+    return account
+
+
+def change_password(user: User, new_password: str) -> None:
+    user.set_password(new_password)
+    user.save()
+    audit(user, "password_changed", user)

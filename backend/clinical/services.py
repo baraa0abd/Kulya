@@ -1,5 +1,6 @@
 """Writes to the clinical record. Views stay thin; every function here audits what it did."""
 
+from django.conf import settings
 from django.db import models, transaction
 from django.utils import timezone
 
@@ -149,6 +150,14 @@ def create_prescription(patient: Patient, doctor: User, data: dict) -> DialysisP
 
 
 @transaction.atomic
+def register_patient(admin: User, data: dict) -> Patient:
+    """Identity only. The patient joins the administrator's organization; outside demo mode the
+    record is a real one and is not marked synthetic."""
+    patient = Patient.objects.create(organization=admin.organization, is_synthetic=settings.DEMO_MODE, **data)
+    audit(admin, "patient_registered", patient, patient=patient)
+    return patient
+
+
 def create_lab_report(patient: Patient, user: User, data: dict) -> LaboratoryReport:
     results = data.pop("results")
     report = LaboratoryReport.objects.create(patient=patient, entered_by=user, **data)

@@ -22,6 +22,6 @@ def call_model(
         return output, [], provider.model_name
     except ProviderError as exc:
         return None, [{"code": "provider_error", "path": "", "message": str(exc)}], ""
-    except Exception as exc:  # noqa: BLE001 - timeouts, config errors, anything else
+    except Exception as exc:  # timeouts, config errors, anything else
         logger.exception("ai call failed", extra={"ctx": {"prompt": prompt_id}})
         return None, [{"code": "provider_error", "path": "", "message": type(exc).__name__}], ""

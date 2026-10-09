@@ -22,7 +22,7 @@ export interface Food {
   allergens: string[];
 }
 
-export interface Recipe {
+interface Recipe {
   id: string;
   name: string;
   localized_names: Record<string, string>;
@@ -180,7 +180,7 @@ export interface NutritionObservation {
   created_at: string;
 }
 
-export interface RecognizedItem {
+interface RecognizedItem {
   name: string;
   quantity: number;
   unit: string;

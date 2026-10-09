@@ -1,7 +1,6 @@
 """Clinical API. Thin views: RolePolicy decides who may call, ScopedViewSet decides which
 patients they reach, services do the writing."""
 
-from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import QuerySet
 from drf_spectacular.utils import extend_schema
@@ -119,14 +118,7 @@ class PatientRegistryViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, vie
         return Patient.objects.filter(organization_id=self.request.user.organization_id).select_related("user")
 
     def perform_create(self, serializer) -> None:
-        admin, data = self.request.user, serializer.validated_data
-        if self.get_queryset().filter(mrn=data["mrn"]).exists():
-            raise ValidationError({"mrn": "This record number is already registered."})
-        account = data.get("user")
-        if account is not None and account.organization_id != admin.organization_id:
-            raise ValidationError({"account": "Choose a patient account of your organization."})
-        patient = serializer.save(organization=admin.organization, is_synthetic=settings.DEMO_MODE)
-        audit(admin, "patient_registered", patient, patient=patient)
+        serializer.instance = services.register_patient(self.request.user, serializer.validated_data)
 
 
 class CareAssignmentViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, ScopedViewSet):

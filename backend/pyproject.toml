@@ -4,7 +4,8 @@ target-version = "py312"
 extend-exclude = ["migrations", ".venv"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B"]
+# C90: a function with more than ten branches is split. RUF100: no suppression that suppresses nothing.
+select = ["E", "F", "I", "UP", "B", "C90", "RUF100"]
 
 [tool.ruff.format]
 quote-style = "double"

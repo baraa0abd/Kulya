@@ -1,15 +1,11 @@
-"""The patient's record assistant. It reads back what the patient may already see on their own
-screens (released results, released summaries, the approved plan, their diary) and nothing else.
-It never judges a result or a food: those questions are answered with the record and a pointer
-to the care team."""
+"""Model-facing side of the record assistant: prompt id, output schema, validation and the
+rule-based answers. Pure functions over the collected record: no database and no clock.
 
-from datetime import timedelta
+The assistant reads the record back. It never judges a result or a food: those questions get the
+record and a pointer to the care team."""
+
 from typing import Any
 
-from django.utils import timezone
-
-from ai.gateway import call_model
-from ai.models import AISummary
 from ai.output_validation import (
     FORBIDDEN,
     NUMBER_PATTERN,
@@ -19,14 +15,7 @@ from ai.output_validation import (
     schema_errors,
     validation_error,
 )
-from clinical.models import Patient, SessionStatus
-from core.models import User
-from core.services import audit
-from nutrition import services as nutrition
 from nutrition.engine import UNITS
-from nutrition.models import ReviewStatus
-
-from .models import ChatMessage
 
 CHAT = "patient_chat_v1"
 CHAT_SCHEMA = {
@@ -38,44 +27,6 @@ CHAT_SCHEMA = {
 # ponytail: English wording only. Blunt on purpose; an answer that trips it is replaced by the
 # rule-based one. Add Arabic terms if a provider is seen giving advice in Arabic.
 CHAT_FORBIDDEN = [*FORBIDDEN, "safe to", "safe for you", "you should", "you must", "stop eating", "your dose", "cure"]
-
-
-def record_facts(patient: Patient) -> dict:
-    """Everything the assistant may use, all of it already visible to the patient."""
-    today, now = timezone.localdate(), timezone.now()
-    plan = nutrition.active_plan(patient)
-    upcoming = patient.sessions.filter(status=SessionStatus.SCHEDULED, scheduled_start__gte=now)
-    summaries = (
-        AISummary.objects.filter(session__patient=patient, released=True, status=AISummary.Status.VERIFIED)
-        .select_related("session")
-        .order_by("-session__scheduled_start")
-    )
-    ideas = patient.meal_recommendations.filter(review_status=ReviewStatus.APPROVED).select_related("recipe")
-    return {
-        "today": today.isoformat(),
-        "laboratory_results": nutrition.lab_facts(patient, today - timedelta(days=365), today, released_only=True),
-        "upcoming_sessions": [
-            timezone.localtime(s.scheduled_start).strftime("%Y-%m-%d %H:%M")
-            for s in upcoming.order_by("scheduled_start")[:3]
-        ],
-        "released_summaries": [
-            {
-                "session_date": timezone.localtime(s.session.scheduled_start).date().isoformat(),
-                "text": s.output.get("patient_summary", ""),
-            }
-            for s in summaries[:3]
-        ],
-        "nutrition_plan": {
-            "guidance": plan.guidance,
-            "prescribed_targets": plan.prescribed_targets,
-            "allergies": plan.allergies,
-        }
-        if plan
-        else None,
-        "diary_today": nutrition.diary(patient, today, today),
-        "diary_last_7_days": nutrition.diary(patient, today - timedelta(days=6), today),
-        "approved_meal_ideas": list(dict.fromkeys(i.recipe.name for i in ideas[:20]))[:5],
-    }
 
 
 def validate_answer(output: Any, payload: dict) -> Errors:
@@ -97,27 +48,7 @@ def validate_answer(output: Any, payload: dict) -> Errors:
     return errors
 
 
-def answer(patient: Patient, user: User, question: str, language: str) -> ChatMessage:
-    history = ChatMessage.objects.filter(patient=patient).order_by("-created_at")[:5]
-    payload = {
-        "question": question,
-        "language": language,
-        "history": [{"question": m.question, "answer": m.answer} for m in reversed(history)],
-        "record": record_facts(patient),
-    }
-    output, errors, model_name = call_model(CHAT, payload)
-    if output is not None:
-        errors = validate_answer(output, payload)
-    if errors:  # provider down, or it said something outside its role: answer from the rules instead
-        output, model_name = {"answer": mock_answer(payload)}, "rule-based"
-    message = ChatMessage.objects.create(
-        patient=patient, author=user, question=question, answer=output["answer"], model_name=model_name
-    )
-    audit(user, "assistant_question", message, patient=patient, model=model_name)
-    return message
-
-
-# --- Rule-based answers: the offline provider and the fallback. Templates over the record. -------
+# --- Rule-based answers: the offline provider and the fallback. Templates over the record. ---
 
 # Analyte as stored (lower-case fragment) -> (Arabic name, words a question may use).
 _ANALYTES = {
@@ -142,9 +73,10 @@ _NUTRIENT_AR = {
 _DRINK = ["drink", "tea", "coffee", "water", "juice", "fluid", "شرب", "شاي", "قهوة", "ماء", "عصير", "سوائل"]
 _FOOD = [*_DRINK, "eat", "can i", "ok to", "okay to", "allowed", "آكل", "اكل", "أكل", "يمكنني", "مسموح"]
 _IDEAS = ["idea", "suggest", "recipe", "اقتراح", "أفكار", "افكار", "وصف"]
-_MEALS = ["meal", "diary", "ate", "food", "وجبة", "وجبات", "طعام"]
+# Arabic entries are stems, so possessive and plural forms match too (جلستي، وجباتي).
+_MEALS = ["meal", "diary", "ate", "food", "وجب", "طعام"]
 _LABS = ["blood", "lab", "test", "result", "تحليل", "تحاليل", "فحص", "مختبر", "نتيجة", "نتائج"]
-_SESSIONS = ["session", "appointment", "dialysis", "جلسة", "جلسات", "موعد", "غسيل"]
+_SESSIONS = ["session", "appointment", "dialysis", "جلس", "موعد", "غسيل"]
 
 
 def _lab_line(lab: dict, ar: bool) -> str:
@@ -255,7 +187,7 @@ def _ideas(record: dict, ar: bool) -> str:
     if not ideas:
         return "لا توجد بعد أفكار وجبات اعتمدها طبيبك." if ar else "No meal ideas have been approved for you yet."
     lead = "أفكار وجبات اعتمدها فريق الرعاية لك: " if ar else "Meal ideas your care team approved for you: "
-    return lead + ", ".join(ideas) + "."
+    return lead + ", ".join(idea["name_ar" if ar else "name"] for idea in ideas) + "."
 
 
 def mock_answer(payload: dict) -> str:

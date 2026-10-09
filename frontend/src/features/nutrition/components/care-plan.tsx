@@ -11,7 +11,7 @@ import { useGet } from "@/lib/hooks";
 import { tr } from "@/lib/i18n";
 import { ClipboardList, Stethoscope } from "lucide-react";
 import { z } from "zod";
-export const limit = optionalNumber(1, 100000);
+const limit = optionalNumber(1, 100000);
 
 const planSchema = z.object({
   potassium_mg_max: limit,

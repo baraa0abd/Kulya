@@ -36,6 +36,8 @@ flowchart LR
 | `backend/*/services.py` | Audited use cases, transactional changes and workflow state. |
 | `backend/nutrition/engine.py` | Pure nutrient arithmetic. No database, framework, provider or clock. |
 | `backend/nutrition/catalog.py` | Catalogue loading and bilingual matching; no patient workflow. |
+| `backend/assistant/ai.py` | The record assistant's prompt id, output schema, validation and rule-based answers. Pure: no database, framework or clock. |
+| `backend/assistant/services.py` | Collects what the patient may already see, asks the model, checks and stores the answer. |
 | `backend/ai/gateway.py`, provider | One provider-call boundary, including recorded failure handling. |
 | `backend/ai/output_validation.py` | Public schema and grounding primitives shared by clinical and nutrition validation. |
 
@@ -63,12 +65,37 @@ flowchart LR
   peer-dependency bypass. The container no longer copies a starter asset directory that has
   no tracked files.
 
+## Second pass: the code added after the first cleanup
+
+Checked with Ruff's unused-code and complexity rules, Vulture, and Knip, then fixed by hand.
+
+- Account creation, deactivation, password change and patient registration were written inside
+  views. They are audited use cases, so they moved to `core/services.py` and
+  `clinical/services.py`; their input checks moved into the serializers. The views now only
+  adapt HTTP, like the rest of the codebase.
+- `assistant/chat.py` mixed four jobs. It is now `assistant/ai.py` (wording and validation,
+  pure) and `assistant/services.py` (workflow), the same split nutrition already uses.
+- `nutrition.services.suggest` had grown past ten branches. Ordering by laboratory results and
+  asking the model for wording are now two named helpers, and the string test that filtered
+  reasons by their text is replaced by an explicit argument.
+- The analyte-to-nutrient table existed twice; the food-and-lab review now derives it from the
+  one in `nutrition/engine.py`.
+- Deleted because nothing used them: `consent_scopes`, `AUDIT_FIELDS`, six `noqa` markers for
+  rules that are not enabled (their reasons stay as plain comments), and seven exports that are
+  only used inside their own file.
+- Ruff now also enforces a branch limit per function (`C90`) and rejects suppressions that
+  suppress nothing (`RUF100`).
+
+Left alone on purpose: unused `request`, `pk`, `args` and `kwargs` parameters are signatures
+required by Django and DRF, and choice values such as `ActionType.MEDICATION` are data, not
+dead code.
+
 ## Guardrails
 
 Frontend architecture tests reject runtime source import cycles, shared-to-feature-UI
 dependencies, imports of route entry points and React/HTTP dependencies in pure contracts
-and meal rules. Backend architecture tests protect the pure arithmetic module and shared
-provider boundary. Behavioral suites cover the clinical and nutrition workflows.
+and meal rules. Backend architecture tests protect the pure arithmetic module, the shared
+provider boundary and the assistant's pure wording module. Behavioral suites cover the clinical and nutrition workflows.
 
 Run frontend `typecheck`, `lint`, `format:check`, `test`, and the isolated-database browser
 suite. Run backend Ruff and pytest. The root test report records results.
@@ -84,6 +111,8 @@ toolchain issue, not a claim that all dependencies are vulnerability-free.
 - [Django design philosophies](https://docs.djangoproject.com/en/5.2/misc/design-philosophies/): loose coupling, cohesion and avoiding repeated knowledge.
 - [Next.js project structure](https://nextjs.org/docs/app/getting-started/project-structure): organization and colocation outside public route entry points.
 - [Next.js server/client components](https://nextjs.org/docs/app/getting-started/server-and-client-components): interactive and browser behavior belongs behind explicit client boundaries.
+- [HackSoft Django Styleguide](https://github.com/HackSoftware/Django-Styleguide): business logic in services, not in views or serializers; adopted as far as it fits.
+- [bulletproof-react](https://github.com/alan2207/bulletproof-react): shared code is imported by features, features by routes, never the other way.
 - [Martin Fowler: Refactoring](https://www.martinfowler.com/books/refactoring.html): design changes should preserve observable behavior and be verified incrementally.
 
 These sources guide the decisions above; they do not prescribe this exact folder tree.

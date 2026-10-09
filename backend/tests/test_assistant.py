@@ -5,8 +5,9 @@ from datetime import timedelta
 import pytest
 from django.utils import timezone
 
-from assistant.chat import mock_answer, record_facts, validate_answer
+from assistant.ai import mock_answer, validate_answer
 from assistant.models import ChatMessage
+from assistant.services import record_facts
 from clinical.models import CareAssignment, LaboratoryReport, LaboratoryResult
 from core.models import Role
 from nutrition import catalog, engine
@@ -115,9 +116,11 @@ def test_rule_based_answers_pass_their_own_checks_and_unsafe_model_text_is_repla
         for question in ("urea", "summarize everything", "can I drink tea", "next session", "blood test", "meals"):
             payload = {"question": question, "language": language, "record": record}
             assert validate_answer({"answer": mock_answer(payload)}, payload) == [], (language, question)
+    possessive = {"question": "متى جلستي القادمة؟", "language": "ar", "record": record}
+    assert mock_answer(possessive).startswith("لا توجد جلسة قادمة")  # the session answer, not the overview
     payload = {"question": "urea", "language": "en", "record": record}
     assert validate_answer({"answer": "Your urea is 55 mmol/L."}, payload)[0]["code"] == "ungrounded_number"
     assert validate_answer({"answer": "It is safe to drink tea."}, payload)[0]["code"] == "unsupported_clinical_claim"
-    monkeypatch.setattr("assistant.chat.call_model", lambda *a: ({"answer": "You should drink 3 cups."}, [], "x"))
+    monkeypatch.setattr("assistant.services.call_model", lambda *a: ({"answer": "You should drink 3 cups."}, [], "x"))
     reply = api(patient.user).post(CHAT, {"question": "can I drink tea", "language": "en"}).json()["answer"]
     assert "You should" not in reply and "can't decide" in reply

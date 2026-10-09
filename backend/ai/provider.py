@@ -95,7 +95,7 @@ class MockProvider(LLMProvider):
 
             return mock_response(prompt_id, payload, image)
         if prompt_id.startswith("patient_chat"):
-            from assistant.chat import mock_answer  # lazy: assistant imports the gateway
+            from assistant.ai import mock_answer  # lazy: assistant imports the gateway
 
             return {"answer": mock_answer(payload)}
         ctx = payload["context"]

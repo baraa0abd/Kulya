@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 
 from core.permissions import PATIENT, patients_for
 
-from . import chat
+from . import services
 from .models import ChatMessage
 
 
@@ -46,5 +46,5 @@ class ChatView(APIView):
     def post(self, request: Request) -> Response:
         body = AskSerializer(data=request.data)
         body.is_valid(raise_exception=True)
-        message = chat.answer(self.patient(request), request.user, **body.validated_data)
+        message = services.answer(self.patient(request), request.user, **body.validated_data)
         return Response(ChatMessageSerializer(message).data, status=status.HTTP_201_CREATED)

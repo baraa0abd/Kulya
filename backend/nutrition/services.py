@@ -197,6 +197,54 @@ def _lab_basis(patient: Patient):
     return (report if watch else None), watch
 
 
+def _ordered_by_labs(picks: list, watch: list[dict], keep_reasons: bool) -> list:
+    """Say where each recipe sits for the watched nutrients, and put the lowest first."""
+    medians = {}
+    for nutrient in {lab["nutrient"] for lab in watch}:
+        known = [v for r in Recipe.objects.all() if (v := r.nutritional_estimate.get(nutrient)) is not None]
+        if known:
+            medians[nutrient] = median(known)
+    first = watch[0]["nutrient"]
+
+    def value(pick) -> float | None:
+        return pick[0].nutritional_estimate.get(first)
+
+    # Rows are listed newest first, so the lowest value is created last and is then shown first;
+    # a recipe with no value is shown last.
+    ranked = sorted(picks, key=lambda pick: (value(pick) is None, value(pick) or 0), reverse=True)
+    return [
+        (
+            recipe,
+            category,
+            (reasons if keep_reasons else []) + engine.lab_reasons(recipe.nutritional_estimate, watch, medians),
+        )
+        for recipe, category, reasons in ranked
+    ]
+
+
+def _model_wording(plan: NutritionPlan | None, watch: list[dict], picks: list) -> dict[str, str] | None:
+    """The model's sentence per recipe, or None when it fails or writes something it may not."""
+    payload = {
+        "plan": {
+            "allergies": plan.allergies,
+            "prescribed_targets": plan.prescribed_targets,
+            "dietary_preferences": plan.dietary_preferences,
+            "guidance": plan.guidance,
+        }
+        if plan
+        else None,
+        "laboratory_results": watch,
+        "recipes": [
+            {"id": str(r.id), "name": r.name, "nutrients": r.nutritional_estimate, "category": c, "reasons": why}
+            for r, c, why in picks
+        ],
+    }
+    output, errors, _ = call_model(SUGGEST, payload)
+    if output is None or errors or validate_suggestions(output, payload):
+        return None
+    return {e["recipe_id"]: e["text"] for e in output["explanations"]}
+
+
 def suggest(patient: Patient, user: User) -> list[MealRecommendation]:
     """Compare catalogue recipes with the approved plan and the latest laboratory report (fixed
     rules), then ask the model only to word the result. Without either, the ideas are general and
@@ -211,47 +259,14 @@ def suggest(patient: Patient, user: User) -> list[MealRecommendation]:
         if category:  # None = contains a documented allergen: never offered
             picks.append((recipe, category, reasons))
     if watch:
-        medians = {}
-        for nutrient in {lab["nutrient"] for lab in watch}:
-            known = [v for r in Recipe.objects.all() if (v := r.nutritional_estimate.get(nutrient)) is not None]
-            if known:
-                medians[nutrient] = median(known)
-        # Rows are listed newest first, so create the lowest value last: it is then shown first,
-        # and a recipe with no value is shown last.
-        first = watch[0]["nutrient"]
-        picks.sort(
-            key=lambda p: (p[0].nutritional_estimate.get(first) is None, p[0].nutritional_estimate.get(first) or 0),
-            reverse=True,
-        )
-        picks = [
-            (
-                recipe,
-                category,
-                [r for r in reasons if "not personalized" not in r]
-                + engine.lab_reasons(recipe.nutritional_estimate, watch, medians),
-            )
-            for recipe, category, reasons in picks
-        ]
+        picks = _ordered_by_labs(picks, watch, keep_reasons=plan is not None)
     personalized = plan is not None or report is not None
     explanations, limitations = {}, [CATALOG_LIMITATION, "This is not a diet order. Ask your care team first."]
     if personalized and picks:
-        payload = {
-            "plan": {**limits, "dietary_preferences": plan.dietary_preferences, "guidance": plan.guidance}
-            if plan
-            else None,
-            "laboratory_results": watch,
-            "recipes": [
-                {"id": str(r.id), "name": r.name, "nutrients": r.nutritional_estimate, "category": c, "reasons": why}
-                for r, c, why in picks
-            ],
-        }
-        output, errors, _ = call_model(SUGGEST, payload)
-        if output is not None:
-            errors = validate_suggestions(output, payload)
-        if errors:
+        explanations = _model_wording(plan, watch, picks)
+        if explanations is None:
+            explanations = {}
             limitations = [*limitations, "The AI explanation was unavailable; the reasons shown are rule-based."]
-        else:
-            explanations = {e["recipe_id"]: e["text"] for e in output["explanations"]}
     sources = [f"Laboratory report collected {report.collected_at.date().isoformat()}"] if report else []
     created = [
         MealRecommendation.objects.create(

@@ -28,6 +28,11 @@ def test_nutrition_does_not_depend_on_clinical_ai_workflows():
 
 
 def test_application_code_calls_models_through_gateway():
-    for app in ("clinical", "workflow", "nutrition"):
+    for app in ("clinical", "workflow", "nutrition", "assistant"):
         for file in (ROOT / app).glob("*.py"):
             assert "ai.provider" not in imported_modules(file), file.name
+
+
+def test_assistant_wording_and_validation_stay_free_of_database_and_framework():
+    imports = imported_modules(ROOT / "assistant/ai.py")
+    assert not [m for m in imports if m.startswith(("django", "rest_framework")) or m.endswith("models")]

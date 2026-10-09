@@ -26,7 +26,7 @@ class RolePolicy(BasePermission):
     """Views declare `read_roles`, `write_roles`, and optionally `action_roles = {"action": roles}`.
     A view that declares nothing is closed to everyone."""
 
-    def has_permission(self, request, view) -> bool:  # noqa: ANN001 - DRF types would import views circularly
+    def has_permission(self, request, view) -> bool:  # untyped: DRF's types would import views circularly
         user = request.user
         if not (user and user.is_authenticated):
             return False
@@ -68,16 +68,6 @@ def consent_filter(user: User, now=None) -> Q:
     return Q(consents__caregiver=user, consents__revoked_at__isnull=True) & (
         Q(consents__expires_at__isnull=True) | Q(consents__expires_at__gt=now)
     )
-
-
-def consent_scopes(user: User, patient) -> set[str]:
-    """Scopes a family caregiver currently holds for one patient (empty when none or expired)."""
-    now = timezone.now()
-    scopes: set[str] = set()
-    for consent in patient.consents.filter(caregiver=user, revoked_at__isnull=True):
-        if consent.expires_at is None or consent.expires_at > now:
-            scopes.update(consent.scopes)
-    return scopes
 
 
 def get_patient_or_404(user: User, patient_id):
